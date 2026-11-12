@@ -1,0 +1,11 @@
+{
+  "plugins": ["prettier-plugin-apex", "@prettier/plugin-xml"],
+  "printWidth": 100,
+  "xmlWhitespaceSensitivity": "ignore",
+  "overrides": [
+    {
+      "files": "**/*.apex",
+      "options": { "parser": "apex-anonymous" }
+    }
+  ]
+}

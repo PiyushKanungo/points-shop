@@ -1,0 +1,50 @@
+{
+  "records": [
+    {
+      "attributes": { "type": "Service__c", "referenceId": "OfferingAskSfcc" },
+      "Name": "Ask an SFCC developer",
+      "Slug__c": "ask-sfcc-question",
+      "Description__c": "Type your SFCC question (SFRA, SCAPI, PWA Kit, Business Manager, jobs, integrations). Piyush replies by email.",
+      "Points_Price__c": 100,
+      "Fulfilment_Type__c": "Question",
+      "Delivery_Promise__c": "Reply by email within 48 hours",
+      "Active__c": true,
+      "Sort_Order__c": 10
+    },
+    {
+      "attributes": { "type": "Service__c", "referenceId": "OfferingResume" },
+      "Name": "Resume review for Salesforce / SFCC developers",
+      "Slug__c": "resume-review",
+      "Description__c": "Upload your resume as a PDF and get it back with comments on what to cut, sharpen and add for Salesforce and SFCC roles.",
+      "Points_Price__c": 250,
+      "Fulfilment_Type__c": "Resume",
+      "Delivery_Promise__c": "Annotated review within 3 days",
+      "Active__c": true,
+      "Sort_Order__c": 20
+    },
+    {
+      "attributes": { "type": "Service__c", "referenceId": "OfferingCareerChat" },
+      "Name": "20-minute career chat",
+      "Slug__c": "career-chat",
+      "Description__c": "A relaxed video call about SFCC careers, switching projects or getting started. Book a slot that suits you.",
+      "Points_Price__c": 300,
+      "Fulfilment_Type__c": "Booking",
+      "Booking_Url__c": "https://cal.com/your-handle/career-chat",
+      "Delivery_Promise__c": "Video link sent when you book",
+      "Active__c": true,
+      "Sort_Order__c": 30
+    },
+    {
+      "attributes": { "type": "Service__c", "referenceId": "OfferingMockInterview" },
+      "Name": "Mock SFCC interview (45 min)",
+      "Slug__c": "mock-interview",
+      "Description__c": "A practice interview with SFCC technical questions, followed by written feedback on what went well and what to work on.",
+      "Points_Price__c": 500,
+      "Fulfilment_Type__c": "Booking",
+      "Booking_Url__c": "https://cal.com/your-handle/mock-interview",
+      "Delivery_Promise__c": "Call plus written feedback",
+      "Active__c": true,
+      "Sort_Order__c": 40
+    }
+  ]
+}

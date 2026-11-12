@@ -1,0 +1,94 @@
+{
+  "records": [
+    {
+      "attributes": { "type": "Earn_Task__c", "referenceId": "TaskSignup" },
+      "Name": "Sign up with email",
+      "Key__c": "signup",
+      "Description__c": "Confirm your email with the magic link.",
+      "Points__c": 50,
+      "Verification__c": "System",
+      "Max_Per_Wallet__c": 1,
+      "Active__c": true,
+      "Sort_Order__c": 10
+    },
+    {
+      "attributes": { "type": "Earn_Task__c", "referenceId": "TaskExplore" },
+      "Name": "Explore the site",
+      "Key__c": "explore",
+      "Description__c": "Visit 3 pages, including How it's built.",
+      "Points__c": 30,
+      "Verification__c": "Honour",
+      "Max_Per_Wallet__c": 1,
+      "Active__c": true,
+      "Sort_Order__c": 20
+    },
+    {
+      "attributes": { "type": "Earn_Task__c", "referenceId": "TaskFeedback" },
+      "Name": "Give feedback on the site",
+      "Key__c": "feedback",
+      "Description__c": "Tell Piyush what works and what doesn't.",
+      "Points__c": 50,
+      "Verification__c": "Form",
+      "Max_Per_Wallet__c": 1,
+      "Active__c": true,
+      "Sort_Order__c": 30
+    },
+    {
+      "attributes": { "type": "Earn_Task__c", "referenceId": "TaskEmailPiyush" },
+      "Name": "Send Piyush an email",
+      "Key__c": "email-piyush",
+      "Description__c": "Say hello or ask something, sent through the site.",
+      "Points__c": 40,
+      "Verification__c": "Form",
+      "Max_Per_Wallet__c": 1,
+      "Active__c": true,
+      "Sort_Order__c": 40
+    },
+    {
+      "attributes": { "type": "Earn_Task__c", "referenceId": "TaskLinkedInPost" },
+      "Name": "Read and react to a LinkedIn post",
+      "Key__c": "linkedin-post",
+      "Description__c": "Honour system: open one of Piyush's posts and react if you like it.",
+      "Points__c": 20,
+      "Verification__c": "Honour",
+      "Max_Per_Wallet__c": 1,
+      "Link_Url__c": "https://www.linkedin.com/in/your-handle/recent-activity/all/",
+      "Active__c": true,
+      "Sort_Order__c": 50
+    },
+    {
+      "attributes": { "type": "Earn_Task__c", "referenceId": "TaskLinkedInHi" },
+      "Name": "Say hi on LinkedIn",
+      "Key__c": "linkedin-hi",
+      "Description__c": "Honour system: connect or send a short hello.",
+      "Points__c": 20,
+      "Verification__c": "Honour",
+      "Max_Per_Wallet__c": 1,
+      "Link_Url__c": "https://www.linkedin.com/in/your-handle/",
+      "Active__c": true,
+      "Sort_Order__c": 60
+    },
+    {
+      "attributes": { "type": "Earn_Task__c", "referenceId": "TaskReferral" },
+      "Name": "Refer a friend who signs up",
+      "Key__c": "referral",
+      "Description__c": "Share your referral link; you earn when a friend signs up with it.",
+      "Points__c": 100,
+      "Verification__c": "Referral",
+      "Max_Per_Wallet__c": 5,
+      "Active__c": true,
+      "Sort_Order__c": 70
+    },
+    {
+      "attributes": { "type": "Earn_Task__c", "referenceId": "TaskReview" },
+      "Name": "Review a delivered order",
+      "Key__c": "review",
+      "Description__c": "Rate and review an offering after it is delivered.",
+      "Points__c": 75,
+      "Verification__c": "Review",
+      "Max_Per_Wallet__c": 10,
+      "Active__c": true,
+      "Sort_Order__c": 80
+    }
+  ]
+}

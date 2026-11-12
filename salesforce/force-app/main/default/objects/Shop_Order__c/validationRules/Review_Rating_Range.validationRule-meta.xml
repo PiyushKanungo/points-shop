@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+  <fullName>Review_Rating_Range</fullName>
+  <active>true</active>
+  <errorConditionFormula>
+    NOT(ISBLANK(Review_Rating__c)) &amp; &amp; (Review_Rating__c &lt; 1 || Review_Rating__c &gt; 5)
+  </errorConditionFormula>
+  <errorMessage>Rating must be 1 to 5.</errorMessage>
+</ValidationRule>

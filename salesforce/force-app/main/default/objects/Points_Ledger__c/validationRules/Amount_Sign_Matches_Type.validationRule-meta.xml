@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+  <fullName>Amount_Sign_Matches_Type</fullName>
+  <active>true</active>
+  <errorConditionFormula>
+    Amount__c = 0 ||
+(ISPICKVAL(Entry_Type__c, 'Earn') &amp; &amp; Amount__c &lt; 0) ||
+(ISPICKVAL(Entry_Type__c, 'Refund') &amp; &amp; Amount__c &lt; 0) ||
+(ISPICKVAL(Entry_Type__c, 'Redeem') &amp; &amp; Amount__c &gt; 0)
+  </errorConditionFormula>
+  <errorMessage>
+    Earn and Refund entries are positive, Redeem entries negative, and no entry is zero.
+  </errorMessage>
+</ValidationRule>

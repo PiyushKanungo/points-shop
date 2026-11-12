@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Salesforce CLI local state
+.sf/
+.sfdx/
+.localdevserver/
+
+# Environment and secrets
+.env
+.env*.local
+
+# Test output
+coverage/
+tests/apex/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

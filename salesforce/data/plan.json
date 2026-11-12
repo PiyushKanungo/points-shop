@@ -1,0 +1,14 @@
+[
+  {
+    "sobject": "Service__c",
+    "saveRefs": false,
+    "resolveRefs": false,
+    "files": ["Service__c.json"]
+  },
+  {
+    "sobject": "Earn_Task__c",
+    "saveRefs": false,
+    "resolveRefs": false,
+    "files": ["Earn_Task__c.json"]
+  }
+]

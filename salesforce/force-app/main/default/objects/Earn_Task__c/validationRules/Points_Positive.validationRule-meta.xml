@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+  <fullName>Points_Positive</fullName>
+  <active>true</active>
+  <errorConditionFormula>
+    Points__c &lt; = 0 || Max_Per_Wallet__c &lt; 1
+  </errorConditionFormula>
+  <errorMessage>Points and max per wallet must be at least 1.</errorMessage>
+</ValidationRule>
