@@ -1137,3 +1137,265 @@ curl returns the catalogue from `GET /services/apexrest/shop/v1/catalog`.
     client-credentials token (phase 2).
 *   **Agentforce test:** results recorded in `docs/spike-agentforce.md`
     (phase 1); they set the milestone 5 plan.
+
+--------------------------------------------------------------------------------
+
+## Milestone 3 Implementation Plan (storefront)
+
+Milestone 3 builds the Next.js storefront against the REST API in section 4.
+Fulfilment inputs (question form, resume upload, Cal.com), the Flows and the
+concierge are milestones 4 and 5; the order page in this milestone shows status
+and next steps only. All paths are under `storefront/`.
+
+### Decisions for this milestone
+
+| Topic | Choice |
+| --- | --- |
+| Scaffold and versions | `create-next-app@16` (App Router, TypeScript, Tailwind CSS v4, ESLint, `src/` directory); the versions it installs are pinned in `package-lock.json`. Added: `jose`, `zod`, `resend`, `@marsidev/react-turnstile`; dev: `vitest`, `@playwright/test`. |
+| Static public pages, dynamic header | Public pages (`/`, `/services/[slug]`, `/how-its-built`) read no cookies, so they stay ISR (`export const revalidate = 600`). The header is a client component that loads the visitor's email, balance and cart count from `GET /api/session` after the page renders. |
+| Signed-in pages | `/cart`, `/orders`, `/orders/[id]`, `/account`, `/feedback`, `/contact` are dynamic server components; without a session they redirect to `/signin?next=<path>`. |
+| Stub backend | Fixture catalogue identical to the seed data. Keeps wallets, balances and orders in a module-level `Map` (lost on restart) so the happy path works end to end. Enforces no limits or idempotency. Canned errors: a wallet whose email contains `+short` gets `INSUFFICIENT_POINTS` on checkout; one containing `+down` gets `UNAVAILABLE` on every call. |
+| Turnstile in development | Cloudflare's published test keys (site key `1x00000000000000000000AA`, secret `1x0000000000000000000000000000000AA`) always pass. `.env.example` lists them as the local defaults. |
+| Local email | When `RESEND_API_KEY` is unset, each email is written as JSON to `storefront/.local-email/<epoch-ms>-<kind>.json` (git-ignored) and logged. |
+| Errors to the browser | Every `/api/*` route returns `{ error: { code, message } }` on failure. HTTP status: section 4's table, plus `UNAVAILABLE` → 503 and `UNAUTHORIZED` from a missing session → 401. |
+
+### Environment (`src/lib/env.ts`)
+
+Parsed with `zod` on first use inside a request (never at import or build
+time). `SHOP_BACKEND` is `stub` or `salesforce`; `stub` is refused when
+`VERCEL_ENV === 'production'`. Required always: `SITE_URL`, `SESSION_SECRET`
+and `MAGIC_LINK_SECRET` (each ≥ 32 characters), `EMAIL_FROM`, `OWNER_EMAIL`,
+`NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`. Required when
+`SHOP_BACKEND=salesforce`: `SF_LOGIN_URL` (the org's My Domain URL),
+`SF_CLIENT_ID`, `SF_CLIENT_SECRET`. Optional: `RESEND_API_KEY`, `BMAC_URL`,
+`GITHUB_URL`, `LINKEDIN_URL`.
+
+### Files
+
+#### Project
+
+1.  **`package.json`, `tsconfig.json`, `next.config.ts`, `postcss.config.mjs`,
+    `eslint.config.mjs`** (Create, from the scaffold) — Scripts added: `test`
+    (`vitest run`), `test:e2e` (`playwright test`), `check:bundle`
+    (`node scripts/check-bundle.mjs`), `typecheck` (`tsc --noEmit`).
+2.  **`.env.example`** (Create) — Every variable above with a comment; stub
+    backend and Turnstile test keys as values; secrets left empty.
+3.  **`.gitignore`** (Create, from the scaffold) — Adds `.local-email/`,
+    `playwright-report/`, `test-results/`.
+4.  **`vitest.config.ts`** (Create) — Node environment, `src/**/*.test.ts`, path
+    alias `@/` → `src/`.
+5.  **`playwright.config.ts`** (Create) — Starts `npm run dev` with
+    `SHOP_BACKEND=stub` on port 3100; one Chromium project; `tests/e2e`.
+6.  **`scripts/check-bundle.mjs`** (Create) — After `next build`, reads every
+    file under `.next/static/`, fails if it contains any of `SF_CLIENT_SECRET`,
+    `SESSION_SECRET`, `MAGIC_LINK_SECRET`, `TURNSTILE_SECRET_KEY`,
+    `RESEND_API_KEY` (values from the environment, skipped when empty) or the
+    host of `SF_LOGIN_URL`. Goal 3's check.
+
+#### Library (`src/lib/`)
+
+7.  **`env.ts`** — As above; `getEnv()` caches the parsed result.
+8.  **`errors.ts`** — `class ShopError extends Error { code; status }`;
+    `statusFor(code)`; `errorResponse(e)` returns `NextResponse.json({ error },
+    { status })`, mapping unknown errors to 500 `INTERNAL` with a fixed
+    message.
+9.  **`backend/types.ts`** — Types transcribing section 4 (`Offering`, `Task`,
+    `LedgerEntry`, `Wallet`, `Order`, `Catalog`, `VerifyResult`, `TaskResult`,
+    `CheckoutResult`) and `interface ShopBackend { getCatalog();
+    verifySignIn(email, issuedAt, referralCode?); getWallet(walletId);
+    completeTask(walletId, taskKey, evidence?); checkout(walletId, checkoutKey,
+    slugs); listOrders(walletId); getOrder(walletId, orderId) }`, all async.
+10. **`backend/salesforce.ts`** — Token: `POST {SF_LOGIN_URL}/services/oauth2/token`
+    with `grant_type=client_credentials`; cached in a module variable for 25
+    minutes and dropped on a 401 (one retry). Calls `{instance_url from the
+    token}/services/apexrest/shop/v1/...` with `AbortSignal.timeout(10000)`. A
+    JSON body with `error.code` becomes `ShopError(code)`. A timeout, network
+    error, 5xx, or a Salesforce error array whose `errorCode` is
+    `REQUEST_LIMIT_EXCEEDED` or `STORAGE_LIMIT_EXCEEDED` becomes
+    `ShopError('UNAVAILABLE')`.
+11. **`backend/stub.ts`** — As in the decisions table. `verifySignIn` creates
+    the wallet with 50 points on first sight and ignores `issuedAt`;
+    `completeTask` adds the task's points; `checkout` subtracts and creates
+    orders numbered `PS-0001`… in status Awaiting Details.
+12. **`backend/fixtures.ts`** — The four offerings and eight tasks from the
+    seed tables.
+13. **`backend/index.ts`** — `getBackend()` returns the stub or Salesforce
+    backend from `SHOP_BACKEND`.
+14. **`session.ts`** — Cookie `ps_session`: HS256 JWT signed with
+    `SESSION_SECRET`, claims `sub` (wallet ID) and `email`, 30-day expiry,
+    `httpOnly`, `secure` outside development, `sameSite: 'lax'`, path `/`.
+    `getSession()` returns `{ walletId, email } | null` (invalid or expired
+    tokens count as none); `setSession`, `clearSession`.
+15. **`magic-link.ts`** — `createToken(email, ref?)`: payload `{ email, iat,
+    exp: iat + 15 min, ref }` as base64url JSON, then `.`, then base64url
+    HMAC-SHA256 of the payload string with `MAGIC_LINK_SECRET`.
+    `verifyToken(token)`: constant-time signature compare, expiry check;
+    throws `ShopError('UNAUTHORIZED', 'This link is invalid or has
+    expired.')`. `linkFor(token)` = `${SITE_URL}/auth/verify#token=${token}`.
+16. **`cart.ts`** — Cookie `ps_cart` (`httpOnly`, 30 days): JSON `{ slugs:
+    string[], checkoutKey: string }` validated with `zod` (unknown or invalid
+    content counts as an empty cart). `addToCart(slug)` and
+    `removeFromCart(slug)` ignore duplicates, cap at 4 slugs, and set a new
+    `crypto.randomUUID()` checkout key whenever the contents change.
+17. **`turnstile.ts`** — `verifyTurnstile(token, ip)`: `POST
+    https://challenges.cloudflare.com/turnstile/v0/siteverify` (form body
+    `secret`, `response`, `remoteip`); a missing token or `success: false`
+    throws `ShopError('VALIDATION', 'Please complete the check.')`.
+18. **`origin.ts`** — `assertSameOrigin(request)`: for POST/DELETE, the
+    `Origin` header must equal the origin of `SITE_URL`; otherwise
+    `ShopError('FORBIDDEN', 'Bad origin.')` with status 403.
+19. **`email/templates.ts`** — Functions returning `{ subject, html, text }`
+    for: magic link, welcome (balance, link to ways to earn), order confirmed
+    (each order's number, offering, points and next step), new-order alert to
+    `OWNER_EMAIL`, and a visitor message (feedback or contact) to `OWNER_EMAIL`
+    with `reply_to` set to the visitor. User text is HTML-escaped.
+20. **`email/send.ts`** — `sendEmail({ to, subject, html, text, replyTo })`:
+    Resend when `RESEND_API_KEY` is set, else the local JSON file. Returns
+    `true`/`false`; failures are logged, never thrown (section 6: best effort).
+    The magic-link route treats `false` as `UNAVAILABLE`.
+21. **`api.ts`** — `requireSession()` throws `ShopError('UNAUTHORIZED', 'Sign
+    in first.')` (401); `readJson(request, schema)` parses with `zod` and throws
+    `VALIDATION` on failure.
+
+#### API routes (`src/app/api/`)
+
+Every state-changing route calls `assertSameOrigin` first and never reads a
+wallet ID from the request.
+
+22. **`auth/link/route.ts`** — `POST { email, ref?, turnstileToken }`:
+    Turnstile check, email format check (same pattern as Apex), create token,
+    send the magic link. Returns `{ ok: true }` (the same response whether or
+    not the email has a wallet).
+23. **`auth/verify/route.ts`** — `POST { token }`: `verifyToken`, then
+    `backend.verifySignIn(email, iat, ref)`, `setSession`, welcome email when
+    `isNew`. Returns `{ ok: true, isNew }`.
+24. **`auth/signout/route.ts`** — `POST`: clears the session. `{ ok: true }`.
+25. **`session/route.ts`** — `GET`: `{ signedIn: false, cartCount }` or `{
+    signedIn: true, email, balance, taskCounts, cartCount }`. `Cache-Control:
+    no-store`. A backend error while signed in returns `signedIn: true` with
+    `balance: null`.
+26. **`cart/route.ts`** — `GET` → `{ slugs }`; `POST { slug }` adds (session
+    required; unknown slugs rejected against the catalogue); `DELETE { slug }`
+    removes. Both return `{ slugs }`.
+27. **`checkout/route.ts`** — `POST`: session required; reads the cart; empty
+    cart → `VALIDATION`; `backend.checkout(walletId, checkoutKey, slugs)`; on
+    `replay: false` sends the order-confirmed email and the owner alert; clears
+    the cart cookie; returns the `CheckoutResult`.
+28. **`tasks/[key]/route.ts`** — `POST { message?, turnstileToken? }`: session
+    required. `explore`, `linkedin-post`, `linkedin-hi`: completed with no
+    evidence. `feedback`, `email-piyush`: Turnstile check, message 10–2,000
+    characters, message emailed to Piyush, then completed with the message as
+    evidence. Any other key → `VALIDATION`. Returns the `TaskResult`.
+
+#### Pages and components (`src/app/`, `src/components/`)
+
+29. **`app/layout.tsx`, `app/globals.css`** — Tailwind theme (warm neutral
+    palette, one accent colour), `Header`, `Footer`, `ExploreTracker`, metadata.
+30. **`components/Header.tsx`** (client) — Site name, links (Shop, How it's
+    built, Orders and Account when signed in), balance pill and cart count from
+    `/api/session`, Sign in / Sign out. Listens for a `shop:refresh` window
+    event to reload after actions.
+31. **`components/Footer.tsx`** — "A personal portfolio project, no uptime
+    promises", privacy note (what is stored; email Piyush to delete), Buy Me a
+    Coffee and GitHub links when set.
+32. **`app/page.tsx`** (ISR) — Hero line in Piyush's friendly voice, grid of
+    `OfferingCard`s, `EarnPanel`, `RefCapture`.
+33. **`components/OfferingCard.tsx`**, **`components/AddToCartButton.tsx`**
+    (client; POST `/api/cart`, then `shop:refresh`; on 401 goes to
+    `/signin?next=<current path>`).
+34. **`components/EarnPanel.tsx`** (client) — Lists tasks with points. Honour
+    LinkedIn tasks: a button that opens the link in a new tab and posts to
+    `/api/tasks/<key>`; explore: a hint ("visit three pages including How it's
+    built"); Form tasks link to `/feedback` or `/contact`; referral: "your link
+    is on your account page"; signup and review: information only. Shows
+    "done" for tasks whose `taskCounts` reached `maxPerWallet`.
+35. **`components/ExploreTracker.tsx`** (client, in the layout) — Records
+    distinct visited paths in `sessionStorage`; on `/how-its-built` with three
+    or more distinct paths and a signed-in visitor, posts `/api/tasks/explore`
+    once per browser session (honour system).
+36. **`components/RefCapture.tsx`** (client) — On the home page, stores `?ref=`
+    in `localStorage` as `ps_ref`.
+37. **`app/services/[slug]/page.tsx`** (ISR, `generateStaticParams` from the
+    catalogue, `dynamicParams = true`) — Description, points, delivery promise,
+    add to cart; unknown slug → `notFound()`.
+38. **`app/cart/page.tsx`** + **`components/CartView.tsx`** (client) — Lines,
+    total, balance, remove buttons, checkout button disabled when short ("You
+    need N more points"); on success goes to `/orders?placed=1`.
+39. **`app/orders/page.tsx`** — Order list (number, offering, status, date);
+    `?placed=1` shows "Order placed. Check your email."
+40. **`app/orders/[id]/page.tsx`** — Status, points, created date, and a next
+    step line per fulfilment type; unknown or another wallet's order →
+    `notFound()`.
+41. **`app/account/page.tsx`** — Email, balance, referral link
+    (`${SITE_URL}/?ref=<code>`), last 20 ledger entries.
+42. **`app/signin/page.tsx`** + **`components/SignInForm.tsx`** (client) —
+    Email field, Turnstile widget, submit to `/api/auth/link` with `ref` from
+    `localStorage`; success message "Check your inbox". The `next` query value
+    is stored in `sessionStorage` for the verify page (only paths starting
+    with `/` are accepted).
+43. **`app/auth/verify/page.tsx`** (client) — Reads `#token=` from
+    `location.hash`, removes it from the URL, shows a "Sign in" button that
+    posts to `/api/auth/verify`; on success clears `ps_ref` and goes to the
+    stored `next` path or `/`.
+44. **`app/feedback/page.tsx`**, **`app/contact/page.tsx`** +
+    **`components/MessageForm.tsx`** (client) — Text area, Turnstile, posts to
+    `/api/tasks/feedback` or `/api/tasks/email-piyush`.
+45. **`app/how-its-built/page.tsx`** (ISR) — Architecture diagram (inline SVG
+    of section 2's overview), order lifecycle, the SFCC mapping table from
+    section 9, GitHub link. Milestone 6 polishes it.
+46. **`components/ErrorNotice.tsx`** — Shows the Goal 9 message for
+    `UNAVAILABLE`, otherwise the error message.
+
+#### Tests
+
+47. **`src/lib/*.test.ts`** (Vitest) — `magic-link` (round trip; tampered
+    payload, wrong signature, expired → `UNAUTHORIZED`); `session` (round trip,
+    expired, tampered); `cart` (add, duplicate ignored, cap of 4, key rotates on
+    change, bad cookie → empty); `origin` (match, mismatch, missing);
+    `turnstile` (mocked fetch success and failure).
+48. **`src/lib/backend/salesforce.test.ts`** — Mocked `fetch`: token cached and
+    reused; 401 drops the token and retries once; `{ error }` body → that code;
+    timeout, 503 and `REQUEST_LIMIT_EXCEEDED` → `UNAVAILABLE`.
+49. **`src/app/api/routes.test.ts`** — Calls route handlers with `Request`
+    objects on the stub backend (cookies mocked): a body containing `walletId`
+    is ignored (the session's wallet is used); a bad `Origin` → 403; no session
+    → 401; `tasks/signup` → 400; checkout clears the cart and returns orders.
+50. **`tests/e2e/visitor-journey.spec.ts`** (Playwright, stub) — Sign in (magic
+    link read from the newest magic-link file in `.local-email/`), complete the
+    explore and LinkedIn tasks to reach 100 points, add Ask an SFCC developer to
+    the cart, check out, see the order in Awaiting Details.
+
+### Review resolutions (milestone 3)
+
+Two Goldfish reviewers (implementation readiness, codebase details) checked this
+plan on 2026-11-12. The scaffold also showed that Next.js 16.4 enables Cache
+Components by default. These rules override the items above where they differ.
+
+| Topic | Resolution |
+| --- | --- |
+| Cache Components | Kept on (scaffold default). `export const revalidate` is not allowed with it. The catalogue is fetched by `getCachedCatalog()` in `src/lib/catalog.ts` with `'use cache'` and `cacheLife({ stale: 300, revalidate: 600, expire: 2592000 })`. Pages that read cookies do so inside `<Suspense>`. |
+| Public pages and outages | Public pages never catch backend errors, so a failed background refresh keeps the last good page (Goal 9). The build prerenders public pages, so the build needs the backend; if Salesforce is down at build time the build fails and Vercel keeps the previous deployment. |
+| Signed-in pages and outages | Each signed-in page wraps its backend calls in `try/catch`: `UNAVAILABLE` (and any other `ShopError`) renders `ErrorNotice`; an unknown wallet (`NOT_FOUND` from `getWallet`) redirects to `/signin?reason=expired`. `/api/session` clears the session cookie on `NOT_FOUND`. |
+| Stub | State lives on `globalThis.__pointsShopStub`. Unknown wallet → `NOT_FOUND`. `STUB_FAIL=catalog` makes `getCatalog` throw `UNAVAILABLE`; `STUB_FAIL=all` makes every call throw it. |
+| Salesforce error mapping (in order) | 1. Timeout or network error → `UNAVAILABLE`. 2. 401 whose body is an array containing `errorCode: 'INVALID_SESSION_ID'` → drop the token, fetch a new one, retry once. 3. Array body with `REQUEST_LIMIT_EXCEEDED` → `UNAVAILABLE`; other array bodies → `UNAVAILABLE` for 5xx, `INTERNAL` otherwise. 4. Object body with `error.code` → that code, except `INTERNAL`, which becomes `UNAVAILABLE` (it also covers `STORAGE_LIMIT_EXCEEDED`, which Apex reports as `INTERNAL`). 5. Any other non-2xx → `UNAVAILABLE` for 5xx, `INTERNAL` otherwise. Token endpoint failures → `UNAVAILABLE` plus a log line. Backend calls use `cache: 'no-store'` on the `fetch`; caching happens only in `getCachedCatalog()`. |
+| Request bodies | `checkout(walletId, key, slugs)` sends `{ checkoutKey, offerings: slugs }`. Bodies carry only the keys in section 4, because `ShopApi` uses `JSON.deserializeStrict`. |
+| Magic-link times | `iat = Date.now()` (epoch milliseconds), `exp = iat + 900000`; `issuedAt` sent to Apex is that `iat`. Signature compare checks lengths before `timingSafeEqual`; a mismatch is `UNAUTHORIZED`. |
+| Async request APIs | `cookies()`, `params` and `searchParams` are awaited; `getSession`, `setSession`, `clearSession` and the cart helpers are `async`. |
+| `useSearchParams` | Not used. `RefCapture` and `SignInForm` read `window.location.search` in `useEffect`. |
+| Resend | `const { error } = await resend.emails.send({ from, to, subject, html, text, replyTo })`; returns `!error`; network errors caught. Local JSON files hold `{ kind, to, subject, text, html, replyTo }`. On Vercel (`VERCEL_ENV` set) `RESEND_API_KEY` is required. |
+| Turnstile | Client IP = first entry of `x-forwarded-for`. A network error or non-200 from siteverify → `UNAVAILABLE`. |
+| Cart cap | Adding a fifth offering → `VALIDATION` ("Your cart holds up to 4 offerings."). |
+| Feedback and contact | The task is awarded even if the email to Piyush fails, because the message is saved as evidence in Salesforce. |
+| Vercel previews | `SITE_URL` is `https://${VERCEL_BRANCH_URL}` when `VERCEL_ENV === 'preview'`; test previews on the branch URL only. Preview uses the Turnstile test keys, `SHOP_BACKEND=salesforce`, the `SF_*` values, and Resend's `onboarding@resend.dev` sender (which only delivers to the Resend account owner) until a domain exists. |
+| Playwright | `webServer: { command: 'npx next dev -p 3100', url: 'http://localhost:3100', reuseExistingServer: !process.env.CI, env: { SHOP_BACKEND: 'stub', SITE_URL: 'http://localhost:3100', SESSION_SECRET, MAGIC_LINK_SECRET (fixed 40-character test values), EMAIL_FROM, OWNER_EMAIL, Turnstile test keys, RESEND_API_KEY: '' } }`, `use.baseURL` the same URL. |
+| Route tests | `vi.mock('next/headers')` with a fake cookie store backed by a `Map` (`get`, `set`, `delete`); assertions read that store. `vi.mock('server-only', () => ({}))`. |
+| Goal 3 bundle check | `check:bundle` runs after a build made with non-empty test values for every secret (`npm run build:check`), fails if any secret value or the token pattern `00D[A-Za-z0-9]{12,15}![A-Za-z0-9._]+` appears in `.next/static`, and fails if no secret values were provided. |
+| Real-org smoke test | `src/lib/backend/salesforce.smoke.test.ts`, run only when `SMOKE=1` and the `SF_*` values are set: catalogue, verify with a `+smoke-<uuid>@example.com` address, wallet, one task, orders list; checks response shapes. Not part of `npm test`. |
+| Goal 9 test | Route test: `/api/session` with `STUB_FAIL=all` returns `balance: null`; unit test: `getCachedCatalog` propagates `UNAVAILABLE` (so ISR keeps the stale page). |
+| Phases | Phase A: library and unit tests (`npm test`, `npm run typecheck`). Phase B: API routes and route tests (same checks). Phase C: pages, components, e2e (`npm run lint`, `npm run build`, `npm run test:e2e`, `npm run build:check`). |
+
+### Exit check
+
+`npm run lint`, `npm run typecheck`, `npm test`, `npm run build`,
+`npm run check:bundle` and `npm run test:e2e` pass locally. With the org from
+milestones 1–2 and `SHOP_BACKEND=salesforce`, CUJ 1 works on a Vercel preview.

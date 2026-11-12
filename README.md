@@ -18,6 +18,8 @@ Browser ──> Next.js on Vercel ──(OAuth client credentials, Apex REST)─
 | Path | What it holds |
 | --- | --- |
 | `salesforce/` | Salesforce DX project: custom objects, validation rules, Apex service classes, Apex REST API, triggers, tests, seed data |
+| `storefront/` | Next.js 16 storefront (App Router, Cache Components, Tailwind v4): catalogue, ways to earn, magic-link sign-in, cart, points checkout, orders |
+| `docs/setup-vercel.md` | Resend, Turnstile and Vercel setup for a live deployment |
 | `docs/prd.md` | Product requirements |
 | `docs/designs/points_shop_v1.md` | The design, reviewed with the Elephant-Goldfish workflow |
 | `docs/setup-org.md` | How to create the org, deploy, seed and create the API user |
@@ -30,10 +32,25 @@ Browser ──> Next.js on Vercel ──(OAuth client credentials, Apex REST)─
 | --- | --- |
 | 1 Salesforce foundation (objects, ledger, triggers, seed data) | Code written; not yet deployed |
 | 2 Earn and checkout (service classes, REST API) | Code written; not yet deployed |
-| 3 Storefront | Not started |
+| 3 Storefront | Built and tested locally against the stub API; not yet connected to an org or deployed |
 | 4 Fulfilment (details, resume upload, Cal.com, Flows) | Not started |
 | 5 Agentforce concierge | Not started; depends on the milestone 1 test |
 | 6 Launch | Not started |
+
+## Run the storefront locally
+
+No Salesforce org needed: the storefront ships with a stub API.
+
+```bash
+cd storefront
+npm install
+cp .env.example .env.local   # then fill SESSION_SECRET and MAGIC_LINK_SECRET with random 32+ character strings
+npm run dev
+```
+
+Sign-in emails are written to `storefront/.local-email/` instead of being sent; open the newest
+`*-magic-link.json` and follow the link. Checks: `npm run lint`, `npm run typecheck`, `npm test`,
+`npm run build:check` (build plus a scan for leaked secrets), `npm run test:e2e` (Playwright).
 
 ## Deploy the back end
 
