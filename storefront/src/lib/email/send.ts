@@ -13,7 +13,10 @@ export interface OutgoingEmail extends EmailContent {
   replyTo?: string;
 }
 
-export const LOCAL_EMAIL_DIR = path.join(process.cwd(), ".local-email");
+/** Where local emails go; LOCAL_EMAIL_DIR overrides it (each test file uses its own folder). */
+export function localEmailDir(): string {
+  return process.env.LOCAL_EMAIL_DIR || path.join(process.cwd(), ".local-email");
+}
 
 /**
  * Sends through Resend when RESEND_API_KEY is set; otherwise writes the email as JSON to
@@ -23,8 +26,9 @@ export async function sendEmail(email: OutgoingEmail): Promise<boolean> {
   const env = getEnv();
   try {
     if (!env.RESEND_API_KEY) {
-      await mkdir(LOCAL_EMAIL_DIR, { recursive: true });
-      const file = path.join(LOCAL_EMAIL_DIR, `${Date.now()}-${email.kind}.json`);
+      const dir = localEmailDir();
+      await mkdir(dir, { recursive: true });
+      const file = path.join(dir, `${Date.now()}-${email.kind}.json`);
       await writeFile(file, JSON.stringify(email, null, 2), "utf8");
       console.info(`[email] ${email.kind} to ${email.to} written to ${file}`);
       return true;

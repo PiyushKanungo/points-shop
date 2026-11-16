@@ -18,6 +18,8 @@ const schema = z
     BMAC_URL: z.url().optional(),
     GITHUB_URL: z.url().optional(),
     LINKEDIN_URL: z.url().optional(),
+    BLOB_READ_WRITE_TOKEN: z.string().optional(),
+    CALCOM_WEBHOOK_SECRET: z.string().optional(),
     STUB_FAIL: z.enum(["catalog", "all"]).optional(),
     VERCEL_ENV: z.string().optional(),
     VERCEL_BRANCH_URL: z.string().optional(),

@@ -32,8 +32,8 @@ Browser ──> Next.js on Vercel ──(OAuth client credentials, Apex REST)─
 | --- | --- |
 | 1 Salesforce foundation (objects, ledger, triggers, seed data) | Deployed to the Developer Edition org; seed data loaded; Agentforce test still to run |
 | 2 Earn and checkout (service classes, REST API) | Deployed; 74 Apex tests pass, 96% coverage; API user and External Client App still to set up |
-| 3 Storefront | Built and tested locally against the stub API; not yet connected to an org or deployed |
-| 4 Fulfilment (details, resume upload, Cal.com, Flows) | Not started |
+| 3 Storefront | Works locally against the real org (CUJ 1 verified); not yet deployed to Vercel |
+| 4 Fulfilment (details, resume upload, Cal.com, Flows) | Built; question → delivered email → review verified against the org; resume upload and Cal.com need Vercel Blob and Cal.com set up |
 | 5 Agentforce concierge | Not started; depends on the milestone 1 test |
 | 6 Launch | Not started |
 

@@ -25,7 +25,8 @@ const { POST: addToCart } = await import("./cart/route");
 const { POST: checkout } = await import("./checkout/route");
 const { POST: task } = await import("./tasks/[key]/route");
 const { resetStubForTests } = await import("@/lib/backend/stub");
-const { LOCAL_EMAIL_DIR } = await import("@/lib/email/send");
+process.env.LOCAL_EMAIL_DIR = path.join(process.cwd(), ".local-email", "test-routes");
+const LOCAL_EMAIL_DIR = process.env.LOCAL_EMAIL_DIR;
 
 const ORIGIN = "http://localhost:3100";
 

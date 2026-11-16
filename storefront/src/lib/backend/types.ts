@@ -78,7 +78,19 @@ export interface CheckoutResult {
   balance: number;
 }
 
+export type OrderDetails = { question: string } | { resumeUrl: string };
+
+export interface ReviewResult {
+  order: Order;
+  pointsAwarded: number;
+  replay: boolean;
+  balance: number;
+}
+
 export interface ShopBackend {
+  saveDetails(walletId: string, orderId: string, details: OrderDetails): Promise<Order>;
+  saveBooking(walletId: string, orderId: string, bookingUid: string, bookingStart: string): Promise<Order>;
+  submitReview(walletId: string, orderId: string, rating: number, text?: string): Promise<ReviewResult>;
   getCatalog(): Promise<Catalog>;
   verifySignIn(email: string, issuedAt: number, referralCode?: string): Promise<VerifyResult>;
   getWallet(walletId: string): Promise<Wallet>;

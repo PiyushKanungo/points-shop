@@ -1,6 +1,6 @@
 import { ShopError } from "../errors";
 import { FIXTURE_CATALOG } from "./fixtures";
-import type { CheckoutResult, Order, ShopBackend, TaskResult, VerifyResult, Wallet } from "./types";
+import type { CheckoutResult, Order, OrderDetails, ReviewResult, ShopBackend, TaskResult, VerifyResult, Wallet } from "./types";
 
 /**
  * Local stand-in for the Salesforce API. It keeps just enough state for the happy path to work
@@ -12,12 +12,15 @@ import type { CheckoutResult, Order, ShopBackend, TaskResult, VerifyResult, Wall
 interface StubState {
   wallets: Map<string, Wallet>;
   orders: Map<string, Order[]>;
+  /** walletId:checkoutKey -> order IDs, for checkout replays */
+  checkouts: Map<string, string[]>;
   seq: number;
 }
 
 const globalStore = globalThis as typeof globalThis & { __pointsShopStub?: StubState };
 // Kept on globalThis so every route bundle and hot reload in `next dev` shares one store.
-const state: StubState = (globalStore.__pointsShopStub ??= { wallets: new Map(), orders: new Map(), seq: 0 });
+const state: StubState = (globalStore.__pointsShopStub ??= { wallets: new Map(), orders: new Map(), checkouts: new Map(), seq: 0 });
+state.checkouts ??= new Map();
 
 /** STUB_FAIL=catalog fails getCatalog; STUB_FAIL=all fails every call (Goal 9 testing). */
 function failIfAsked(isCatalog: boolean) {
@@ -95,7 +98,8 @@ export const stubBackend: ShopBackend = {
   async checkout(walletId: string, checkoutKey: string, slugs: string[]): Promise<CheckoutResult> {
     const wallet = walletOrThrow(walletId);
     const orders = state.orders.get(walletId) ?? [];
-    const previous = orders.filter((o) => o.id.startsWith(`${checkoutKey}:`));
+    const previousIds = state.checkouts.get(`${walletId}:${checkoutKey}`) ?? [];
+    const previous = orders.filter((o) => previousIds.includes(o.id));
     if (previous.length > 0) {
       return { orders: structuredClone(previous), replay: true, balance: wallet.balance };
     }
@@ -112,7 +116,7 @@ export const stubBackend: ShopBackend = {
       const number = `PS-${String(++state.seq).padStart(4, "0")}`;
       addEntry(wallet, -offering.pointsPrice, "Redeem", `Order ${number}`);
       return {
-        id: `${checkoutKey}:${offering.slug}`,
+        id: `stub-order-${state.seq}`,
         orderNumber: number,
         offering: { slug: offering.slug, name: offering.name, fulfilmentType: offering.fulfilmentType },
         status: "Awaiting Details",
@@ -127,12 +131,52 @@ export const stubBackend: ShopBackend = {
       };
     });
     state.orders.set(walletId, [...created, ...orders]);
+    state.checkouts.set(`${walletId}:${checkoutKey}`, created.map((o) => o.id));
     return { orders: structuredClone(created), replay: false, balance: wallet.balance };
   },
 
   async listOrders(walletId: string) {
     walletOrThrow(walletId);
     return structuredClone(state.orders.get(walletId) ?? []);
+  },
+
+  async saveDetails(walletId: string, orderId: string, details: OrderDetails): Promise<Order> {
+    const order = orderOrThrow(walletId, orderId);
+    if (order.status !== "Awaiting Details") throw new ShopError("INVALID_STATE", `This order is ${order.status}.`);
+    if ("question" in details) {
+      if (order.offering.fulfilmentType !== "Question") throw new ShopError("VALIDATION", "This order does not take a question.");
+      order.question = details.question.trim();
+    } else {
+      if (order.offering.fulfilmentType !== "Resume") throw new ShopError("VALIDATION", "This order does not take a resume.");
+      order.resumeUrl = details.resumeUrl;
+    }
+    order.status = "In Progress";
+    return structuredClone(order);
+  },
+
+  async saveBooking(walletId: string, orderId: string, bookingUid: string, bookingStart: string): Promise<Order> {
+    const order = orderOrThrow(walletId, orderId);
+    if (order.offering.fulfilmentType !== "Booking") throw new ShopError("VALIDATION", "This order does not take a booking.");
+    if (order.status !== "Awaiting Details") {
+      if (order.status === "In Progress" && order.bookingStart) return structuredClone(order);
+      throw new ShopError("INVALID_STATE", `This order is ${order.status}.`);
+    }
+    order.bookingStart = bookingStart;
+    order.status = "In Progress";
+    void bookingUid;
+    return structuredClone(order);
+  },
+
+  async submitReview(walletId: string, orderId: string, rating: number, text?: string): Promise<ReviewResult> {
+    const wallet = walletOrThrow(walletId);
+    const order = orderOrThrow(walletId, orderId);
+    if (order.review) return { order: structuredClone(order), pointsAwarded: 0, replay: true, balance: wallet.balance };
+    if (order.status !== "Delivered") throw new ShopError("INVALID_STATE", `This order is ${order.status}, not Delivered.`);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw new ShopError("VALIDATION", "Rating must be 1 to 5.");
+    order.review = { rating, text: text?.trim() || null };
+    wallet.taskCounts.review = (wallet.taskCounts.review ?? 0) + 1;
+    addEntry(wallet, 75, "Earn", "Task: Review a delivered order");
+    return { order: structuredClone(order), pointsAwarded: 75, replay: false, balance: wallet.balance };
   },
 
   async getOrder(walletId: string, orderId: string) {
@@ -143,8 +187,29 @@ export const stubBackend: ShopBackend = {
   },
 };
 
+function orderOrThrow(walletId: string, orderId: string): Order {
+  walletOrThrow(walletId);
+  const order = (state.orders.get(walletId) ?? []).find((o) => o.id === orderId);
+  if (!order) throw new ShopError("NOT_FOUND", "Order not found.");
+  return order;
+}
+
+/** For tests and local demos only: what Piyush does in Salesforce. */
+export function deliverForTests(orderId: string) {
+  for (const orders of state.orders.values()) {
+    const order = orders.find((o) => o.id === orderId);
+    if (order) {
+      order.status = "Delivered";
+      order.deliveredAt = new Date().toISOString();
+      return;
+    }
+  }
+  throw new Error(`No stub order ${orderId}`);
+}
+
 /** For tests only. */
 export function resetStubForTests() {
+  state.checkouts.clear();
   state.wallets.clear();
   state.orders.clear();
   state.seq = 0;

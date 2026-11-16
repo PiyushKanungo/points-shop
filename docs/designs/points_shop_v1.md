@@ -507,8 +507,9 @@ cookie.
 | Order cancelled | Flow `Order_Cancelled` (Send Email action) | `Status__c` changes to Cancelled |
 
 The two Flows are record-triggered after save, built in Flow Builder and
-retrieved into source in milestone 4. Each has a fault path that sends Piyush a
-custom notification. Resend sends are best-effort: a failure is logged and the
+written as Flow metadata in milestone 4 and deployed active. Each has a fault path
+that creates a high-priority Task for the user who changed the status, so the
+status change and any refund still save when the email fails. Resend sends are best-effort: a failure is logged and the
 visitor still sees the order page, which shows the same next steps.
 
 ### 7. Agentforce concierge
@@ -1402,3 +1403,121 @@ Components by default. These rules override the items above where they differ.
 `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`,
 `npm run check:bundle` and `npm run test:e2e` pass locally. With the org from
 milestones 1–2 and `SHOP_BACKEND=salesforce`, CUJ 1 works on a Vercel preview.
+
+--------------------------------------------------------------------------------
+
+## Milestone 4 Implementation Plan (fulfilment)
+
+Milestone 4 lets visitors give what each order needs, lets Piyush deliver or
+cancel in Salesforce with an email to the visitor, and collects reviews (CUJ 2,
+CUJ 4). The Apex endpoints (`details`, `booking`, `review`) already exist from
+milestone 2. Paths: `FA` = `salesforce/force-app/main/default`, `SF` =
+`storefront/src`.
+
+### Decisions for this milestone
+
+| Topic | Choice |
+| --- | --- |
+| Flow failure alert | Each Flow's Send Email action has a fault path that creates a high-priority Task for the user who changed the status (subject names the order and email), so the save still commits. (Review: without it, a failed email would roll back the status change and the refund.) |
+| Storefront URL in Flow emails | Custom label `Shop_Storefront_Url` (default `https://points-shop.vercel.app`), changed in Setup → Custom Labels once the domain is known. |
+| Visitor email address in Flows | `$Record.Wallet__r.Email__c` (cross-object reference in the Flow, not the formula field). |
+| Resume upload without Blob | When `BLOB_READ_WRITE_TOKEN` is unset (local development), the order page shows "Resume upload isn't configured here" and the route returns `UNAVAILABLE`. |
+| Cal.com webhook without secret | When `CALCOM_WEBHOOK_SECRET` is unset, the webhook route returns 503 and saves nothing. |
+| Booking link | `bookingUrl` from the catalogue plus `?email=<email>&metadata[walletId]=<id>&metadata[orderId]=<id>`. The webhook trusts these only after Apex confirms the order belongs to that wallet. |
+
+### Files
+
+#### Salesforce
+
+1.  **`FA/labels/CustomLabels.labels-meta.xml`** (Create) — Label
+    `Shop_Storefront_Url`, value `https://points-shop.vercel.app`, protected
+    false.
+2.  **`FA/flows/Order_Delivered.flow-meta.xml`** (Create) — Record-triggered,
+    after save, on update of `Shop_Order__c`, entry condition `Status__c` equals
+    `Delivered` and "only when a record is updated to meet the condition".
+    One action: Send Email (`emailSimple`) to `$Record.Wallet__r.Email__c`,
+    subject "Delivered: {order number}, {offering name}", plain-text body (text
+    template) thanking the visitor, inviting a review for 75 points, with the
+    link `{Shop_Storefront_Url}/orders/{record Id}`.
+3.  **`FA/flows/Order_Cancelled.flow-meta.xml`** (Create) — Same shape for
+    `Status__c` equals `Cancelled`; body says the order was cancelled and the
+    points were returned, with a link to the account page.
+4.  **`FA/classes/OrderFlowsTest.cls`** (Create) — Moving an order to Delivered
+    and to Cancelled succeeds with the Flows active (they must not throw in
+    tests); `Limits.getEmailInvocations()` increases by one for each.
+
+#### Storefront
+
+5.  **`storefront/package.json`, `package-lock.json`** (Modify) — Add
+    `@vercel/blob` `^2.9.0`.
+5a. **`SF/lib/backend/types.ts`** (Modify) — Add to `ShopBackend`:
+    `saveDetails(walletId, orderId, { question } | { resumeUrl })`,
+    `saveBooking(walletId, orderId, bookingUid, bookingStart)`,
+    `submitReview(walletId, orderId, rating, text?)` returning `{ order,
+    pointsAwarded, replay, balance }`.
+6.  **`SF/lib/backend/salesforce.ts`**, **`SF/lib/backend/stub.ts`** (Modify)
+    — Implement the three calls (`POST .../details`, `.../booking`,
+    `.../review`). The stub moves Awaiting Details → In Progress, and records a
+    review on Delivered orders (+75 once). The stub gains a test-only
+    `deliverForTests(orderId)`.
+7.  **`SF/lib/env.ts`** (Modify) — Optional `BLOB_READ_WRITE_TOKEN`,
+    `CALCOM_WEBHOOK_SECRET`.
+8.  **`SF/lib/resume-url.ts`** (Create) — `isIssuedResumeUrl(url, orderId)`:
+    https, host ends with `.public.blob.vercel-storage.com`, path starts with
+    `/resumes/<orderId>/`, ends with `.pdf`.
+9.  **`SF/app/api/orders/[id]/details/route.ts`** (Create) — `POST {
+    question }` or `{ resumeUrl }`; origin check, session; a resume URL must pass
+    `isIssuedResumeUrl`; calls `saveDetails`; returns `{ order }`.
+10. **`SF/app/api/orders/[id]/review/route.ts`** (Create) — `POST { rating,
+    text? }`; origin check, session; returns the review result.
+11. **`SF/app/api/resume-upload/route.ts`** (Create) — `handleUpload` from
+    `@vercel/blob/client`. For the browser's token request (the Origin check
+    applies only to that event type): session required, `clientPayload` is `{
+    orderId }`, the order must belong to the session wallet, be Awaiting Details
+    and be a Resume order; token options `allowedContentTypes:
+    ['application/pdf']`, `maximumSizeInBytes: 5242880`, `addRandomSuffix:
+    true`, and the pathname must start with `resumes/<orderId>/`.
+    `onUploadCompleted` only logs (it is not called on localhost).
+12. **`SF/app/api/webhooks/calcom/route.ts`** (Create) — Reads the raw body,
+    verifies `X-Cal-Signature-256` (hex HMAC-SHA256 with
+    `CALCOM_WEBHOOK_SECRET`, constant-time). On `triggerEvent ===
+    'BOOKING_CREATED'` reads `payload.metadata.walletId`,
+    `payload.metadata.orderId`, `payload.uid`, `payload.startTime` and calls
+    `saveBooking`. Any `ShopError` (wrong wallet, not a booking order, wrong
+    status, missing metadata) is logged and answered 200 so Cal.com does not
+    retry; `UNAVAILABLE` and `INTERNAL` → 503 so Cal.com retries (a repeat is a
+    replay in `saveBooking`); other events, including reschedules (accepted
+    limitation), → 200 ignored; bad signature → 401. No Origin check.
+13. **`SF/components/FulfilmentForm.tsx`** (Create, client) — By offering type
+    on an Awaiting Details order: Question (textarea 20–2,000, posts to
+    `details`); Resume (file input, PDF ≤ 5 MB, `upload()` from
+    `@vercel/blob/client` with `handleUploadUrl: '/api/resume-upload'` and
+    `clientPayload: JSON.stringify({ orderId })`, pathname
+    `resumes/<orderId>/resume.pdf`, then posts the returned URL to `details`);
+    Booking (button opening the prefilled Cal.com link in a new tab and a note
+    that the page updates once booked). Refreshes the page on success.
+14. **`SF/components/ReviewForm.tsx`** (Create, client) — On Delivered orders
+    without a review: 1–5 star radio group and optional text (≤ 1,000), posts to
+    `review`, shows "+75 points" on success. Shows the saved review otherwise.
+15. **`SF/app/orders/[id]/page.tsx`** (Modify) — Uses the two forms; shows the
+    submitted question, resume link or booking time on In Progress orders. The
+    booking URL comes from `getCachedCatalog()` by `order.offering.slug` (Goal 9
+    message if missing); the link is built with `new URL()` and
+    `searchParams.set` using `session.email` and `session.walletId`. The "form
+    arrives soon" text is removed.
+16. **`SF/app/api/orders.test.ts`** (Create) — Route tests on the stub: question
+    saved and status In Progress; a resume URL on another host or for another
+    order → 400; review +75 once on a delivered order; Cal.com webhook with a
+    good signature saves the booking, bad signature → 401, unknown order → 200
+    and nothing saved.
+17. **`SF/lib/resume-url.test.ts`** (Create) — Accepted and rejected URLs.
+18. **`storefront/.env.example`**, **`docs/setup-vercel.md`** (Modify) — The
+    two new variables; Blob store and Cal.com webhook setup steps.
+
+### Exit check
+
+Salesforce: deploy succeeds and all Apex tests pass. Storefront: lint,
+typecheck, unit and route tests, build and the e2e journey pass. Live (after
+Vercel setup): a question order goes Awaiting Details → In Progress, Piyush
+marks it Delivered in Salesforce, the visitor gets the delivered email and can
+review for +75 points.

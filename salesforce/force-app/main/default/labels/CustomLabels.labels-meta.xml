@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
+    <labels>
+        <fullName>Shop_Storefront_Url</fullName>
+        <categories>PointsShop</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Points Shop storefront URL</shortDescription>
+        <value>https://points-shop.vercel.app</value>
+    </labels>
+</CustomLabels>

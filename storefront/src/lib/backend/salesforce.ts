@@ -5,6 +5,7 @@ import type {
   Catalog,
   CheckoutResult,
   Order,
+  ReviewResult,
   ShopBackend,
   TaskResult,
   VerifyResult,
@@ -154,4 +155,28 @@ export const salesforceBackend: ShopBackend = {
   getOrder: async (walletId, orderId) =>
     (await call<{ order: Order }>("GET", `wallets/${enc(walletId)}/orders/${enc(orderId)}`))
       .order,
+
+  saveDetails: async (walletId, orderId, details) =>
+    (
+      await call<{ order: Order }>(
+        "POST",
+        `wallets/${enc(walletId)}/orders/${enc(orderId)}/details`,
+        details,
+      )
+    ).order,
+
+  saveBooking: async (walletId, orderId, bookingUid, bookingStart) =>
+    (
+      await call<{ order: Order }>(
+        "POST",
+        `wallets/${enc(walletId)}/orders/${enc(orderId)}/booking`,
+        { bookingUid, bookingStart },
+      )
+    ).order,
+
+  submitReview: (walletId, orderId, rating, text) =>
+    call<ReviewResult>("POST", `wallets/${enc(walletId)}/orders/${enc(orderId)}/review`, {
+      rating,
+      ...(text ? { text } : {}),
+    }),
 };

@@ -48,11 +48,26 @@ says what you need to do yourself and what to send back.
    | `EMAIL_FROM` | `Points Shop <onboarding@resend.dev>` for now |
    | `OWNER_EMAIL` | where new-order alerts and visitor messages go |
    | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | from step 2 (test keys are fine for Preview) |
-   | `GITHUB_URL`, `BMAC_URL`, `LINKEDIN_URL` | optional footer links |
+   | `GITHUB_URL` | `https://github.com/PiyushKanungo/points-shop` |
+| `BMAC_URL`, `LINKEDIN_URL` | optional footer links |
 
 5. Deploy. The build fetches the catalogue from Salesforce, so the org must be reachable.
 
-## 4. Check it works (milestone 3 exit check)
+## 4. Resume uploads and bookings (milestone 4)
+
+1. **Vercel Blob:** in the Vercel project → Storage → Create Database → Blob → connect it to the
+   project. Vercel adds `BLOB_READ_WRITE_TOKEN` itself. Redeploy.
+2. **Cal.com:** sign up at [cal.com](https://cal.com/signup) and create two event types,
+   "Career chat" (20 min) and "Mock interview" (45 min). In each event's Advanced settings, hide it
+   from your profile. Put the two booking links into the two booking offerings in Salesforce
+   (Points Shop app → Offerings → Booking URL).
+3. **Cal.com webhook:** Settings → Developer → Webhooks → New: subscriber URL
+   `https://<your-project>.vercel.app/api/webhooks/calcom`, event **Booking Created**, and a secret
+   you make up. Add the same secret to Vercel as `CALCOM_WEBHOOK_SECRET` and redeploy.
+4. **Salesforce label:** Setup → Custom Labels → `Shop_Storefront_Url` → set it to your Vercel URL,
+   so the delivered and cancelled emails link to the right site.
+
+## 5. Check it works
 
 On the deployment URL: sign in with your own email, earn 100 points (explore three pages
 including How it's built, then a LinkedIn task), add "Ask an SFCC developer" to the cart and check
