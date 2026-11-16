@@ -49,7 +49,7 @@ says what you need to do yourself and what to send back.
    | `OWNER_EMAIL` | where new-order alerts and visitor messages go |
    | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | from step 2 (test keys are fine for Preview) |
    | `GITHUB_URL` | `https://github.com/PiyushKanungo/points-shop` |
-| `BMAC_URL`, `LINKEDIN_URL` | optional footer links |
+   | `BMAC_URL`, `LINKEDIN_URL` | optional footer links |
 
 5. Deploy. The build fetches the catalogue from Salesforce, so the org must be reachable.
 

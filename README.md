@@ -30,11 +30,11 @@ Browser ──> Next.js on Vercel ──(OAuth client credentials, Apex REST)─
 
 | Milestone | Status |
 | --- | --- |
-| 1 Salesforce foundation (objects, ledger, triggers, seed data) | Deployed to the Developer Edition org; seed data loaded; Agentforce test still to run |
+| 1 Salesforce foundation (objects, ledger, triggers, seed data) | Done: deployed, seed data loaded, Agentforce test run (see docs/spike-agentforce.md) |
 | 2 Earn and checkout (service classes, REST API) | Deployed; 74 Apex tests pass, 96% coverage; API user and External Client App still to set up |
 | 3 Storefront | Works locally against the real org (CUJ 1 verified); not yet deployed to Vercel |
 | 4 Fulfilment (details, resume upload, Cal.com, Flows) | Built; question → delivered email → review verified against the org; resume upload and Cal.com need Vercel Blob and Cal.com set up |
-| 5 Agentforce concierge | Not started; depends on the milestone 1 test |
+| 5 Agentforce concierge | Test passed: wallet binding works; agent user created; Agent API call still to verify |
 | 6 Launch | Not started |
 
 ## Run the storefront locally

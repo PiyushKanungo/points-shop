@@ -132,12 +132,12 @@ Each goal is met when its check passes.
 
 ## Open Questions
 
-*   **Agentforce capabilities on Developer Edition** (answered by the
-    milestone 1 test, [docs/spike-agentforce.md](../spike-agentforce.md)):
-    can the Agent API be called with client credentials; can a server-set
-    context variable be mapped to an action input so the model cannot change
-    it; how many LLM requests one visitor message uses; reply latency; whether
-    agent sessions count against data storage.
+*   **Agent API with client credentials** (the rest was answered by the milestone 1
+    Agentforce test on 2026-11-16, see [docs/spike-agentforce.md](../spike-agentforce.md)):
+    wallet binding through an Agent Script state variable works and the model
+    cannot override it; replies take about 10–11 s; sessions use no data storage.
+    Still open: calling the published agent through the Agent API with the
+    storefront's client credentials (first step of milestone 5).
 *   **Employment contract:** does the Capgemini contract allow free SFCC help on
     the side? Blocks launch, not the build.
 *   **Final point values** for offerings and tasks. The seed tables use the
