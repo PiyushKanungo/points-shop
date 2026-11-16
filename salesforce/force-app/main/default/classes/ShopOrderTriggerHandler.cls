@@ -21,14 +21,14 @@ public with sharing class ShopOrderTriggerHandler extends TriggerHandler {
   }
 
   protected override void afterUpdate() {
-    Map<Id, Shop_Order__c> cancelled = new Map<Id, Shop_Order__c>();
+    Map<Id, Shop_Order__c> cancelledOrders = new Map<Id, Shop_Order__c>();
     for (Shop_Order__c shopOrder : (List<Shop_Order__c>) newList) {
       Shop_Order__c old = (Shop_Order__c) oldMap.get(shopOrder.Id);
       if (shopOrder.Status__c == CANCELLED && old.Status__c != CANCELLED) {
-        cancelled.put(shopOrder.Id, shopOrder);
+        cancelledOrders.put(shopOrder.Id, shopOrder);
       }
     }
-    if (cancelled.isEmpty()) {
+    if (cancelledOrders.isEmpty()) {
       return;
     }
 
@@ -37,7 +37,7 @@ public with sharing class ShopOrderTriggerHandler extends TriggerHandler {
     for (AggregateResult row : [
       SELECT Shop_Order__c orderId, SUM(Amount__c) total
       FROM Points_Ledger__c
-      WHERE Shop_Order__c IN :cancelled.keySet() AND Entry_Type__c = :LedgerService.REDEEM
+      WHERE Shop_Order__c IN :cancelledOrders.keySet() AND Entry_Type__c = :LedgerService.REDEEM
       GROUP BY Shop_Order__c
     ]) {
       Decimal total = (Decimal) row.get('total');
@@ -45,7 +45,7 @@ public with sharing class ShopOrderTriggerHandler extends TriggerHandler {
     }
 
     List<LedgerService.Posting> refunds = new List<LedgerService.Posting>();
-    for (Shop_Order__c shopOrder : cancelled.values()) {
+    for (Shop_Order__c shopOrder : cancelledOrders.values()) {
       Integer redeemed = redeemedByOrder.get(shopOrder.Id);
       if (redeemed == null || redeemed == 0) {
         continue;

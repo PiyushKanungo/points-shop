@@ -1,9 +1,7 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
-  <fullName>Price_Positive</fullName>
-  <active>true</active>
-  <errorConditionFormula>
-    Points_Price__c &lt; = 0
-  </errorConditionFormula>
-  <errorMessage>Points price must be above zero.</errorMessage>
+    <fullName>Price_Positive</fullName>
+    <active>true</active>
+    <errorConditionFormula>Points_Price__c &lt;= 0</errorConditionFormula>
+    <errorMessage>Points price must be above zero.</errorMessage>
 </ValidationRule>

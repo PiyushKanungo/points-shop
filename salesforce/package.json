@@ -4,14 +4,13 @@
   "version": "0.1.0",
   "description": "Points Shop back end: Salesforce DX project (custom objects, Apex service classes, Apex REST).",
   "scripts": {
-    "format": "prettier --write \"force-app/**/*.{cls,trigger,xml}\" \"scripts/**/*.apex\"",
-    "format:check": "prettier --check \"force-app/**/*.{cls,trigger,xml}\" \"scripts/**/*.apex\"",
+    "format": "prettier --write \"force-app/**/*.{cls,trigger}\" \"scripts/**/*.apex\"",
+    "format:check": "prettier --check \"force-app/**/*.{cls,trigger}\" \"scripts/**/*.apex\"",
     "deploy": "sf project deploy start --source-dir force-app --wait 20",
     "test": "sf apex run test --test-level RunLocalTests --code-coverage --result-format human --wait 20",
     "seed": "sf data import tree --plan data/plan.json"
   },
   "devDependencies": {
-    "@prettier/plugin-xml": "^3.4.1",
     "prettier": "^3.3.3",
     "prettier-plugin-apex": "^2.1.5"
   }

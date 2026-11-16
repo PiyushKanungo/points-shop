@@ -94,6 +94,7 @@ public inherited sharing class WalletService {
   // ------------------------------------------------------------------ helpers
 
   /** Set by insertWallet when this transaction created the wallet. */
+  @TestVisible
   private static Boolean insertedHere = false;
 
   private static String normaliseEmail(String email) {
@@ -116,15 +117,19 @@ public inherited sharing class WalletService {
   }
 
   /**
-   * Inserts a new wallet. If another request created it at the same moment (duplicate email), the
-   * existing wallet is returned instead. A referral-code collision is retried once with a new code.
+   * Inserts a new wallet. Salesforce's DUPLICATE_VALUE error does not name the clashing field, so on
+   * a duplicate the email is looked up again: if a wallet now exists, another request created it at
+   * the same moment and that wallet is returned; otherwise it was a referral-code clash, retried once
+   * with a new code.
    */
+  @TestVisible
   private static Wallet__c insertWallet(String email, Long issuedAt) {
     insertedHere = false;
     Wallet__c wallet = new Wallet__c(
       Email__c = email,
       Last_Token_Issued_At__c = issuedAt,
-      First_Sign_In_At__c = System.now()
+      First_Sign_In_At__c = System.now(),
+      Referral_Code__c = firstReferralCodeForTest
     );
     for (Integer attempt = 0; attempt < 2; attempt++) {
       try {
@@ -132,15 +137,14 @@ public inherited sharing class WalletService {
         insertedHere = true;
         return wallet;
       } catch (DmlException e) {
-        String field = duplicateField(e);
-        if (field == 'Email__c') {
-          Wallet__c existing = findForUpdate(email);
-          if (existing != null) {
-            return existing;
-          }
+        if (e.getDmlType(0) != StatusCode.DUPLICATE_VALUE) {
           throw e;
         }
-        if (field == 'Referral_Code__c' && attempt == 0) {
+        Wallet__c existing = findForUpdate(email);
+        if (existing != null) {
+          return existing;
+        }
+        if (attempt == 0) {
           wallet.Id = null;
           wallet.Referral_Code__c = null; // the trigger generates a new one
           continue;
@@ -151,23 +155,9 @@ public inherited sharing class WalletService {
     throw new ShopException(ShopException.INTERNAL, 'Could not create the wallet.');
   }
 
+  /** Test hook: forces the first insert attempt to use this referral code (to simulate a clash). */
   @TestVisible
-  private static String duplicateField(DmlException e) {
-    if (e.getDmlType(0) != StatusCode.DUPLICATE_VALUE) {
-      return null;
-    }
-    List<String> fields = e.getDmlFieldNames(0);
-    String message = e.getDmlMessage(0);
-    for (String candidate : new List<String>{ 'Email__c', 'Referral_Code__c' }) {
-      if (
-        (fields != null && fields.contains(candidate)) ||
-        (message != null && message.contains(candidate))
-      ) {
-        return candidate;
-      }
-    }
-    return null;
-  }
+  private static String firstReferralCodeForTest;
 
   private static void applyReferral(Wallet__c wallet, String referralCode) {
     if (String.isBlank(referralCode)) {

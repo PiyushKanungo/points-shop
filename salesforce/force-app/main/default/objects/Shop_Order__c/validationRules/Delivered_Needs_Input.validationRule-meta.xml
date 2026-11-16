@@ -1,12 +1,9 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
-  <fullName>Delivered_Needs_Input</fullName>
-  <active>true</active>
-  <errorConditionFormula>
-    ISCHANGED(Status__c) &amp; &amp; ISPICKVAL(Status__c, 'Delivered') &amp; &amp; ISPICKVAL(PRIORVALUE(Status__c), 'Awaiting
-    Details')
-  </errorConditionFormula>
-  <errorMessage>
-    Add the visitor's input (In Progress) before marking the order Delivered.
-  </errorMessage>
+    <fullName>Delivered_Needs_Input</fullName>
+    <active>true</active>
+    <errorConditionFormula>ISCHANGED(Status__c) &amp;&amp;
+ISPICKVAL(Status__c, 'Delivered') &amp;&amp;
+ISPICKVAL(PRIORVALUE(Status__c), 'Awaiting Details')</errorConditionFormula>
+    <errorMessage>Add the visitor's input (In Progress) before marking the order Delivered.</errorMessage>
 </ValidationRule>

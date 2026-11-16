@@ -816,8 +816,10 @@ Until a Developer Edition org exists, the files can be checked only with
     `force-app` (default), `sourceApiVersion` `"65.0"`, namespace empty.
 6.  **`salesforce/.forceignore`** (Create) — Ignores `**/jsconfig.json`,
     `**/.eslintrc.json`, `**/__tests__/**`, `.sfdx`, `.sf`.
-7.  **`salesforce/package.json`** (Create) — Dev dependencies `prettier` 3,
-    `prettier-plugin-apex` 2 and `@prettier/plugin-xml` 3. Scripts: `format`, `format:check`
+7.  **`salesforce/package.json`** (Create) — Dev dependencies `prettier` 3 and
+    `prettier-plugin-apex` 2. Prettier formats Apex only: the XML plugin broke
+    validation-rule formulas (`&&` became `& &`) and was removed after the first
+    deploy. Scripts: `format`, `format:check`
     (`prettier --check "force-app/**/*.{cls,trigger,xml}"`), `deploy`
     (`sf project deploy start --source-dir force-app --wait 20`), `test`
     (`sf apex run test --test-level RunLocalTests --code-coverage
@@ -1023,11 +1025,12 @@ the three test classes; `npm run seed` imports 4 offerings and 8 tasks;
     `verifySignIn(String email, Long issuedAt, String referralCode)` returns
     `ShopDtos.VerifyResult`; `getWallet(Id walletId)` returns
     `ShopDtos.Wallet`. Email checked against a simple pattern (one `@`, a dot
-    in the domain, ≤ 254 characters). A new wallet is inserted. On
-    `DUPLICATE_VALUE`, `DmlException.getDmlFieldNames(0)` decides: `Email__c`
-    → re-query `FOR UPDATE` and continue as an existing wallet;
-    `Referral_Code__c` → clear the code (the trigger fills a new one) and retry
-    once. A `TASK_LIMIT_REACHED` from the referrer's
+    in the domain, ≤ 254 characters). A new wallet is inserted. Salesforce's
+    `DUPLICATE_VALUE` error does not name the field (found when deploying), so
+    on a duplicate the email is re-queried `FOR UPDATE`: a wallet found means a
+    concurrent first sign-in and it is used as an existing wallet; none found
+    means a referral-code clash, so the code is cleared (the trigger fills a new
+    one) and the insert retried once. A `TASK_LIMIT_REACHED` from the referrer's
     `referral` award is caught and ignored, so the new visitor's sign-in still
     succeeds. Behaviour as in section 5.
 33. **`FA/classes/EarnService.cls`** — `inherited sharing`.

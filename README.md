@@ -30,8 +30,8 @@ Browser ──> Next.js on Vercel ──(OAuth client credentials, Apex REST)─
 
 | Milestone | Status |
 | --- | --- |
-| 1 Salesforce foundation (objects, ledger, triggers, seed data) | Code written; not yet deployed |
-| 2 Earn and checkout (service classes, REST API) | Code written; not yet deployed |
+| 1 Salesforce foundation (objects, ledger, triggers, seed data) | Deployed to the Developer Edition org; seed data loaded; Agentforce test still to run |
+| 2 Earn and checkout (service classes, REST API) | Deployed; 74 Apex tests pass, 96% coverage; API user and External Client App still to set up |
 | 3 Storefront | Built and tested locally against the stub API; not yet connected to an org or deployed |
 | 4 Fulfilment (details, resume upload, Cal.com, Flows) | Not started |
 | 5 Agentforce concierge | Not started; depends on the milestone 1 test |
