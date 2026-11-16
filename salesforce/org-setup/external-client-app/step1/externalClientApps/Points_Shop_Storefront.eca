@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExternalClientApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <contactEmail>you@example.com</contactEmail>
+    <description>Points Shop Next.js storefront: server-to-server calls to the Apex REST API (client credentials).</description>
+    <distributionState>Local</distributionState>
+    <isProtected>false</isProtected>
+    <label>Points Shop Storefront</label>
+</ExternalClientApplication>
