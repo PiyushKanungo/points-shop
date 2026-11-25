@@ -99,8 +99,25 @@ global with sharing class ShopApi {
         );
         return WalletService.verifySignIn(r.email, r.issuedAt, r.referralCode);
       }
+      if (n == 1 && path[0] == 'email') {
+        ShopEmailService.send(
+          (ShopEmailService.Request) parse(body, ShopEmailService.Request.class, false)
+        );
+        return new Map<String, Object>{ 'ok' => true };
+      }
       if (n >= 3 && path[0] == 'wallets') {
         Id walletId = toId(path[1], Wallet__c.SObjectType);
+        if (n == 4 && path[2] == 'chat' && path[3] == 'start') {
+          return ConciergeService.start(walletId);
+        }
+        if (n == 4 && path[2] == 'chat' && path[3] == 'message') {
+          ShopDtos.ChatRequest r = (ShopDtos.ChatRequest) parse(
+            body,
+            ShopDtos.ChatRequest.class,
+            false
+          );
+          return ConciergeService.send(walletId, r.chatKey, r.sessionId, r.text);
+        }
         if (n == 4 && path[2] == 'tasks') {
           ShopDtos.TaskRequest r = (ShopDtos.TaskRequest) parse(
             body,
@@ -140,6 +157,14 @@ global with sharing class ShopApi {
       return new Map<String, Object>{
         'order' => OrderService.saveDetails(walletId, orderId, r.question, r.resumeUrl)
       };
+    }
+    if (action == 'resume') {
+      ShopDtos.ResumeRequest r = (ShopDtos.ResumeRequest) parse(
+        body,
+        ShopDtos.ResumeRequest.class,
+        false
+      );
+      return new Map<String, Object>{ 'order' => ResumeService.save(walletId, orderId, r.pdf) };
     }
     if (action == 'booking') {
       ShopDtos.BookingRequest r = (ShopDtos.BookingRequest) parse(

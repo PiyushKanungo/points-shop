@@ -4,6 +4,7 @@ import { upload } from "@vercel/blob/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { FulfilmentType } from "@/lib/backend/types";
+import { MAX_PRIVATE_RESUME_BYTES } from "@/lib/resume-url";
 
 const MAX_RESUME_BYTES = 5 * 1024 * 1024;
 
@@ -22,15 +23,21 @@ export function FulfilmentForm({
   orderId,
   fulfilmentType,
   bookingLink,
+  privateResume,
 }: {
   orderId: string;
   fulfilmentType: FulfilmentType;
   bookingLink: string | null;
+  /** True when resumes are stored as private Salesforce files instead of in Vercel Blob. */
+  privateResume: boolean;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [question, setQuestion] = useState("");
+  const [slot, setSlot] = useState("");
+  const maxBytes = privateResume ? MAX_PRIVATE_RESUME_BYTES : MAX_RESUME_BYTES;
+  const maxLabel = privateResume ? "2 MB" : "5 MB";
   const [file, setFile] = useState<File | null>(null);
 
   async function submitQuestion(event: React.FormEvent) {
@@ -47,10 +54,21 @@ export function FulfilmentForm({
     event.preventDefault();
     if (!file) return;
     if (file.type !== "application/pdf") return setError("Please choose a PDF file.");
-    if (file.size > MAX_RESUME_BYTES) return setError("The PDF must be 5 MB or smaller.");
+    if (file.size > maxBytes) return setError(`The PDF must be ${maxLabel} or smaller.`);
     setBusy(true);
     setError(null);
     try {
+      if (privateResume) {
+        const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}/resume`, {
+          method: "POST",
+          headers: { "content-type": "application/pdf" },
+          body: file,
+        });
+        const data = await res.json().catch(() => null);
+        if (res.ok) router.refresh();
+        else setError(data?.error?.message ?? "The upload didn't work. Try again.");
+        return;
+      }
       const blob = await upload(`resumes/${encodeURIComponent(orderId)}/resume.pdf`, file, {
         access: "public",
         handleUploadUrl: "/api/resume-upload",
@@ -62,6 +80,28 @@ export function FulfilmentForm({
       else router.refresh();
     } catch (e) {
       setError(e instanceof Error && e.message ? e.message : "The upload didn't work. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitBooking(event: React.FormEvent) {
+    event.preventDefault();
+    const start = new Date(slot);
+    if (Number.isNaN(start.getTime())) return setError("Pick a date and time.");
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}/booking`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ start: start.toISOString() }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok) router.refresh();
+      else setError(data?.error?.message ?? "That didn't save. Try again.");
+    } catch {
+      setError("That didn't save. Try again.");
     } finally {
       setBusy(false);
     }
@@ -103,7 +143,7 @@ export function FulfilmentForm({
     return (
       <form onSubmit={submitResume} className="space-y-3">
         <label htmlFor="resume" className="block font-semibold">
-          Your resume (PDF, up to 5 MB)
+          Your resume (PDF, up to {maxLabel})
         </label>
         <input
           id="resume"
@@ -124,21 +164,35 @@ export function FulfilmentForm({
     );
   }
 
+  if (bookingLink) {
+    return (
+      <div className="space-y-3">
+        <p className="font-semibold">Pick a time</p>
+        <a href={bookingLink} target="_blank" rel="noopener" className="btn-primary">
+          Choose a slot on Cal.com
+        </a>
+        <p className="text-sm text-muted">
+          Once you book, this order moves to In Progress (refresh this page in a minute).
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-3">
-      <p className="font-semibold">Pick a time</p>
-      {bookingLink ? (
-        <>
-          <a href={bookingLink} target="_blank" rel="noopener" className="btn-primary">
-            Choose a slot on Cal.com
-          </a>
-          <p className="text-sm text-muted">
-            Once you book, this order moves to In Progress (refresh this page in a minute).
-          </p>
-        </>
-      ) : (
-        <p className="text-sm text-muted">Booking isn&apos;t available right now. Piyush will email you a link.</p>
+    <form onSubmit={submitBooking} className="space-y-3">
+      <label htmlFor="slot" className="block font-semibold">
+        Pick a time (your local time)
+      </label>
+      <input id="slot" type="datetime-local" required step={900} value={slot} onChange={(e) => setSlot(e.target.value)} className="field" />
+      <p className="text-sm text-muted">At least a day ahead, up to 60 days. Piyush confirms by email with the video link.</p>
+      <button type="submit" className="btn-primary" disabled={busy || !slot}>
+        {busy ? "Sending…" : "Request this time"}
+      </button>
+      {error && (
+        <p role="alert" className="text-sm text-accent">
+          {error}
+        </p>
       )}
-    </div>
+    </form>
   );
 }

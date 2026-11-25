@@ -1,12 +1,16 @@
 /**
  * Concierge action: what the shop sells, the tasks the visitor can still earn points with, and
- * their balance. walletId is bound to a server-set session variable (optional: without it the
+ * their balance. The wallet comes from the chat key (optional: without it the
  * action answers for a signed-out visitor).
  */
 public without sharing class ConciergeGetCatalog {
   public class Input {
-    @InvocableVariable(label='Wallet ID' description='Set by the server for the signed-in visitor.')
-    public String walletId;
+    @InvocableVariable(
+      label='Session key'
+      description='The chatKey from the current message.'
+      required=false
+    )
+    public String sessionKey;
   }
 
   public class Output {
@@ -46,9 +50,10 @@ public without sharing class ConciergeGetCatalog {
       output.offerings = String.join(offeringLines, '\n');
       output.balance = 0;
       Map<String, Integer> done = new Map<String, Integer>();
-      if (String.isNotBlank(input.walletId)) {
+      Id walletId = ConciergeService.walletFor(input.sessionKey);
+      if (walletId != null) {
         try {
-          ShopDtos.WalletDto wallet = WalletService.getWallet(Id.valueOf(input.walletId));
+          ShopDtos.WalletDto wallet = WalletService.getWallet(walletId);
           output.balance = wallet.balance;
           done = wallet.taskCounts;
         } catch (Exception e) {

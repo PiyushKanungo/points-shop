@@ -29,7 +29,7 @@
       "Description__c": "A relaxed video call about SFCC careers, switching projects or getting started. Book a slot that suits you.",
       "Points_Price__c": 300,
       "Fulfilment_Type__c": "Booking",
-      "Booking_Url__c": "https://cal.com/your-handle/career-chat",
+      "Booking_Url__c": null,
       "Delivery_Promise__c": "Video link sent when you book",
       "Active__c": true,
       "Sort_Order__c": 30
@@ -41,7 +41,7 @@
       "Description__c": "A practice interview with SFCC technical questions, followed by written feedback on what went well and what to work on.",
       "Points_Price__c": 500,
       "Fulfilment_Type__c": "Booking",
-      "Booking_Url__c": "https://cal.com/your-handle/mock-interview",
+      "Booking_Url__c": null,
       "Delivery_Promise__c": "Call plus written feedback",
       "Active__c": true,
       "Sort_Order__c": 40

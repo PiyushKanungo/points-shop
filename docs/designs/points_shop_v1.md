@@ -1618,3 +1618,14 @@ starts can feed action inputs and the model cannot change it. Paths: `FA` =
 All Apex tests pass; the agent is published and active; storefront checks pass;
 against the org, a signed-in visitor asks for the balance, asks what to buy, and
 orders from chat; the order appears in Salesforce and the balance updates.
+
+### As built (milestone 5)
+
+- The Agent API rejected the app's tokens, so `ConciergeService` runs the agent with the
+  `generateAiAgentResponse` invocable action and the storefront calls it through Apex REST.
+- That route carries no session variables. Each chat has a random 128-bit key on the wallet
+  (`Chat_Key__c`). Actions accept only this key, so identity never comes from the model or visitor.
+- Chat is capped at 40 messages a wallet a day. `ps_chat` is signed, bound to the wallet and cleared
+  on sign-out. The chat route sends the order emails, so the planned chat-order Flow is not needed.
+- Orders take the wallet's owner, so orders placed by the agent user are visible to the storefront.
+- `Booking_Url_Required` is inactive: booking happens on the site when there is no Booking URL.

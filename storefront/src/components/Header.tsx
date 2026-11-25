@@ -56,7 +56,7 @@ export function Header() {
           <span aria-hidden className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-sm text-accent-ink">
             P
           </span>
-          Points Shop
+          Piyush&apos;s Points Shop
         </Link>
         <nav aria-label="Main" className="flex flex-wrap items-center gap-1 text-sm sm:gap-2">
           <Link href="/how-its-built" className="rounded-md px-2 py-1.5 hover:bg-paper">

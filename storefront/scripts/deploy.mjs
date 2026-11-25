@@ -3,7 +3,6 @@
 import { spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
-import { createInterface } from "node:readline/promises";
 
 const siteUrl = (process.argv[2] ?? "https://points-shop.vercel.app").replace(/\/$/, "");
 const local = Object.fromEntries(
@@ -29,11 +28,6 @@ function vercel(args, input) {
   }
 }
 
-const rl = createInterface({ input: process.stdin, output: process.stdout });
-const resendKey = local.RESEND_API_KEY || (await rl.question("Paste your Resend API key: ")).trim();
-const ownerEmail = (await rl.question("Email you signed up to Resend with: ")).trim() || local.OWNER_EMAIL;
-rl.close();
-if (!resendKey) throw new Error("A Resend API key is required.");
 
 if (!existsSync(".vercel/project.json")) vercel("link --yes --project points-shop");
 
@@ -42,10 +36,8 @@ const values = {
   SITE_URL: siteUrl,
   SESSION_SECRET: randomBytes(32).toString("hex"),
   MAGIC_LINK_SECRET: randomBytes(32).toString("hex"),
-  RESEND_API_KEY: resendKey,
-  OWNER_EMAIL: ownerEmail,
 };
-for (const key of ["EMAIL_FROM", "NEXT_PUBLIC_TURNSTILE_SITE_KEY", "TURNSTILE_SECRET_KEY", "SF_LOGIN_URL",
+for (const key of ["SMTP_USER", "SMTP_PASS", "RESEND_API_KEY", "OWNER_EMAIL", "EMAIL_FROM", "NEXT_PUBLIC_TURNSTILE_SITE_KEY", "TURNSTILE_SECRET_KEY", "SF_LOGIN_URL",
   "SF_CLIENT_ID", "SF_CLIENT_SECRET", "GITHUB_URL", "LINKEDIN_URL", "BMAC_URL"]) {
   if (local[key]) values[key] = local[key];
 }

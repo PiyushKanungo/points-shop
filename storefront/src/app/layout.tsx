@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
+import { ConciergePanel } from "@/components/ConciergePanel";
 import { ExploreTracker } from "@/components/ExploreTracker";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
@@ -9,8 +10,12 @@ import "./globals.css";
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
+const siteUrl = process.env.SITE_URL || "http://localhost:3000";
+
 export const metadata: Metadata = {
-  title: { default: "Points Shop · Piyush Kanungo", template: "%s · Points Shop" },
+  metadataBase: new URL(siteUrl),
+  openGraph: { title: "Piyush's Points Shop", description: "Earn points, spend them on real SFCC help.", type: "website" },
+  title: { default: "Piyush's Points Shop", template: "%s · Piyush's Points Shop" },
   description:
     "Earn points by saying hi, spend them on real SFCC help from Piyush: questions, resume reviews, career chats and mock interviews.",
 };
@@ -27,6 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           {children}
         </main>
         <Footer githubUrl={process.env.GITHUB_URL} bmacUrl={process.env.BMAC_URL} />
+        <ConciergePanel />
         <Suspense fallback={null}>
           <ExploreTracker />
         </Suspense>

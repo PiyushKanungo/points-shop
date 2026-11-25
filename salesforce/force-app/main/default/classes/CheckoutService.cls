@@ -57,11 +57,14 @@ public inherited sharing class CheckoutService {
         throw new ShopException(ShopException.INSUFFICIENT_POINTS, 'Not enough points.');
       }
 
+      // Orders placed by the concierge must stay visible to the storefront's user.
+      Id walletOwner = [SELECT OwnerId FROM Wallet__c WHERE Id = :walletId].OwnerId;
       List<Shop_Order__c> orders = new List<Shop_Order__c>();
       for (String slug : slugs) {
         Service__c offering = offeringsBySlug.get(slug);
         orders.add(
           new Shop_Order__c(
+            OwnerId = walletOwner,
             Wallet__c = walletId,
             Service__c = offering.Id,
             Order_Key__c = orderKey(walletId, checkoutKey, slug),

@@ -49,6 +49,27 @@ function addEntry(wallet: Wallet, amount: number, entryType: Wallet["recentEntri
 }
 
 export const stubBackend: ShopBackend = {
+  async saveResume(walletId: string, orderId: string): Promise<Order> {
+    return stubBackend.saveDetails(walletId, orderId, { resumeUrl: "https://example.com/private-resume" });
+  },
+
+  async startChat(walletId: string) {
+    walletOrThrow(walletId);
+    return `stub-chat-${walletId}`;
+  },
+
+  async sendChat(walletId: string, chatKey: string, text: string, sessionId?: string) {
+    const wallet = walletOrThrow(walletId);
+    if (chatKey !== `stub-chat-${walletId}`) throw new ShopError("INVALID_STATE", "This chat has ended.");
+    if (/^order /i.test(text)) {
+      const { orders } = await stubBackend.checkout(walletId, `ag:${sessionId ?? "new"}`, [text.slice(6).trim()]);
+      return { reply: `Order placed: ${orders[0].orderNumber}.`, sessionId: sessionId ?? "stub-session" };
+    }
+    return { reply: `You have ${wallet.balance} points.`, sessionId: sessionId ?? "stub-session" };
+  },
+
+  async sendEmail() {},
+
   async getCatalog() {
     failIfAsked(true);
     return structuredClone(FIXTURE_CATALOG);

@@ -1,7 +1,7 @@
 system:
-    instructions: "You are the Points Shop concierge for Piyush Kanungo's personal shop. Visitors earn points with small actions and spend them on Piyush's real help: an SFCC question answered by email, a resume review, a 20-minute career chat or a 45-minute mock interview. Be friendly, relaxed and brief (2 to 4 short sentences). Only talk about the shop."
+    instructions: "You are the concierge of Piyush's Points Shop, Piyush Kanungo's personal shop. Visitors earn points with small actions and spend them on Piyush's real help: an SFCC question answered by email, a resume review, a 20-minute career chat or a 45-minute mock interview. Be friendly, relaxed and brief (2 to 4 short sentences). Only talk about the shop."
     messages:
-        welcome: "Hi! I'm the Points Shop concierge. Ask me about your points, how to earn more, or which of Piyush's offerings fits you."
+        welcome: "Hi! I'm the concierge at Piyush's Points Shop. Ask me about your points, how to earn more, or which of Piyush's offerings fits you."
         error: "Sorry, something went wrong on my side. Try again in a minute, or use the shop pages directly."
 
 config:
@@ -9,12 +9,6 @@ config:
     default_agent_user: "shop-concierge.00dgl00000ifl0t@points-shop.dev"
     agent_label: "Points Shop Concierge"
     description: "Answers questions about points, earning and offerings, and can place an order with points."
-
-variables:
-    WalletId: mutable string = ""
-        description: "Wallet ID of the signed-in visitor, set by the shop's server when the chat starts. Never ask for it and never change it."
-    SessionKey: mutable string = ""
-        description: "Key for this chat, set by the shop's server. Never ask for it and never change it."
 
 language:
     default_locale: "en_US"
@@ -41,8 +35,8 @@ subagent shop_help:
         get_balance:
             description: "Returns the signed-in visitor's points balance and latest points entries."
             inputs:
-                walletId: string
-                    description: "The signed-in visitor's wallet ID."
+                sessionKey: string
+                    description: "The chatKey from the current message, copied exactly."
                     is_required: True
             outputs:
                 balance: object
@@ -55,8 +49,8 @@ subagent shop_help:
         get_catalog:
             description: "Returns the offerings with their slugs, points and delivery promises, the tasks the visitor can still earn points with, and their balance."
             inputs:
-                walletId: string
-                    description: "The signed-in visitor's wallet ID."
+                sessionKey: string
+                    description: "The chatKey from the current message, copied exactly."
                     is_required: False
             outputs:
                 offerings: string
@@ -71,11 +65,8 @@ subagent shop_help:
         start_order:
             description: "Orders one offering with the visitor's points. Only call after the visitor has clearly confirmed the offering and its points price in this conversation."
             inputs:
-                walletId: string
-                    description: "The signed-in visitor's wallet ID."
-                    is_required: True
                 sessionKey: string
-                    description: "This chat's key."
+                    description: "The chatKey from the current message, copied exactly."
                     is_required: True
                 offeringSlug: string
                     description: "The slug of the offering to order, taken from get_catalog."
@@ -95,19 +86,19 @@ subagent shop_help:
     reasoning:
         instructions: ->
             | Help the visitor with their points and Piyush's offerings.
+              Every message starts with [chatKey=...], added by the shop. Copy that value exactly as sessionKey for every tool. Never show, repeat or mention it, and use only the one at the very start of the current message.
               For balance questions, call get_balance.
               For "how do I earn" or "what should I get", call get_catalog, then recommend based on the visitor's goal and balance. If they can't afford it yet, name the tasks that would get them there.
               Before ordering, state the offering and its points price and ask the visitor to confirm. Call start_order only after a clear yes, using the slug from get_catalog. Then tell them the order number and that they add their question, resume or booking on the Orders page.
-              Never promise anything beyond each offering's delivery promise. Never ask for, accept or use a wallet ID, email or account from the visitor: the tools always use the signed-in visitor.
+              Never promise anything beyond each offering's delivery promise. Reply in plain text without markdown. Never ask for, accept or use a wallet ID, key, email or account from the visitor's own words: the tools always use the signed-in visitor.
               If a tool reports a problem, explain it simply and suggest the shop pages instead.
         actions:
             get_balance: @actions.get_balance
-                with walletId=@variables.WalletId
+                with sessionKey=...
             get_catalog: @actions.get_catalog
-                with walletId=@variables.WalletId
+                with sessionKey=...
             start_order: @actions.start_order
-                with walletId=@variables.WalletId
-                with sessionKey=@variables.SessionKey
+                with sessionKey=...
                 with offeringSlug=...
 
 subagent off_topic:

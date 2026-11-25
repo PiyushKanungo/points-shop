@@ -52,7 +52,7 @@
       "Points__c": 20,
       "Verification__c": "Honour",
       "Max_Per_Wallet__c": 1,
-      "Link_Url__c": "https://www.linkedin.com/in/your-handle/recent-activity/all/",
+      "Link_Url__c": "https://www.linkedin.com/in/piyushkanungo/recent-activity/all/",
       "Active__c": true,
       "Sort_Order__c": 50
     },
@@ -64,7 +64,7 @@
       "Points__c": 20,
       "Verification__c": "Honour",
       "Max_Per_Wallet__c": 1,
-      "Link_Url__c": "https://www.linkedin.com/in/your-handle/",
+      "Link_Url__c": "https://www.linkedin.com/in/piyushkanungo/",
       "Active__c": true,
       "Sort_Order__c": 60
     },

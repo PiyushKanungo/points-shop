@@ -1,20 +1,13 @@
 /**
  * Concierge action: orders one offering with points for the signed-in visitor.
- * walletId and sessionKey are bound to server-set session variables; only offeringSlug comes from
- * the model. The checkout key is built from the session key and slug, so repeating the request
+ * The wallet comes from the chat key only; the model supplies the slug. The checkout key is built from the session key and slug, so repeating the request
  * in the same chat returns the first order instead of buying twice.
  */
 public without sharing class ConciergeStartOrder {
   public class Input {
     @InvocableVariable(
-      label='Wallet ID'
-      description='Set by the server for the signed-in visitor.'
-      required=true
-    )
-    public String walletId;
-    @InvocableVariable(
       label='Session key'
-      description='Set by the server for this chat.'
+      description='The chatKey from the current message.'
       required=true
     )
     public String sessionKey;
@@ -47,10 +40,14 @@ public without sharing class ConciergeStartOrder {
       Output output = new Output();
       output.success = false;
       try {
-        String slug = input.offeringSlug == null ? '' : input.offeringSlug.trim();
+        String slug = input.offeringSlug == null ? '' : input.offeringSlug.trim().toLowerCase();
+        Id walletId = ConciergeService.walletFor(input.sessionKey);
+        if (walletId == null) {
+          throw new ShopException(ShopException.UNAUTHORIZED, 'this chat has ended.');
+        }
         String checkoutKey = checkoutKeyFor(input.sessionKey, slug);
         ShopDtos.CheckoutResult result = CheckoutService.checkout(
-          Id.valueOf(input.walletId),
+          walletId,
           checkoutKey,
           new List<String>{ slug }
         );

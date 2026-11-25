@@ -1,3 +1,6 @@
+/** Size limit when the resume is stored as a private Salesforce file (no Blob store). */
+export const MAX_PRIVATE_RESUME_BYTES = 2_000_000;
+
 /** Folder in Vercel Blob for one order's resume. */
 export function resumeFolder(orderId: string): string {
   return `resumes/${encodeURIComponent(orderId)}/`;

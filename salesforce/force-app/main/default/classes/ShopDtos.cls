@@ -134,6 +134,16 @@ public with sharing class ShopDtos {
     public Datetime bookingStart;
   }
 
+  public class ChatRequest {
+    public String chatKey;
+    public String sessionId;
+    public String text;
+  }
+
+  public class ResumeRequest {
+    public String pdf;
+  }
+
   public class ReviewRequest {
     public Integer rating;
     public String text;

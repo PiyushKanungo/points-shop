@@ -87,7 +87,17 @@ export interface ReviewResult {
   balance: number;
 }
 
+export interface ChatReply {
+  reply: string;
+  sessionId: string;
+}
+
 export interface ShopBackend {
+  saveResume(walletId: string, orderId: string, pdfBase64: string): Promise<Order>;
+  startChat(walletId: string): Promise<string>;
+  sendChat(walletId: string, chatKey: string, text: string, sessionId?: string): Promise<ChatReply>;
+  /** Sends through Salesforce; `to` null means the shop's owner. */
+  sendEmail(to: string | null, subject: string, html: string): Promise<void>;
   saveDetails(walletId: string, orderId: string, details: OrderDetails): Promise<Order>;
   saveBooking(walletId: string, orderId: string, bookingUid: string, bookingStart: string): Promise<Order>;
   submitReview(walletId: string, orderId: string, rating: number, text?: string): Promise<ReviewResult>;

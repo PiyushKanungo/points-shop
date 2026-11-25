@@ -1,4 +1,4 @@
-# Points Shop
+# Piyush's Points Shop
 
 A personal shop where visitors earn points by interacting with Piyush, then spend them on real
 services he delivers: an SFCC question answered by email, a resume review, a career chat and a

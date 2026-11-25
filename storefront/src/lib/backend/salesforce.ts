@@ -3,6 +3,7 @@ import { getEnv } from "../env";
 import { isErrorCode, ShopError } from "../errors";
 import type {
   Catalog,
+  ChatReply,
   CheckoutResult,
   Order,
   ReviewResult,
@@ -19,6 +20,7 @@ import type {
 
 const TOKEN_TTL_MS = 25 * 60 * 1000;
 const TIMEOUT_MS = 10_000;
+const CHAT_TIMEOUT_MS = 40_000;
 
 interface CachedToken {
   accessToken: string;
@@ -91,7 +93,7 @@ function toError(status: number, body: unknown): ShopError {
   return new ShopError("INTERNAL", "Something went wrong.");
 }
 
-async function call<T>(method: "GET" | "POST", path: string, payload?: unknown): Promise<T> {
+async function call<T>(method: "GET" | "POST", path: string, payload?: unknown, timeoutMs = TIMEOUT_MS): Promise<T> {
   for (let attempt = 0; attempt < 2; attempt++) {
     const { accessToken, instanceUrl } = await getToken();
     let response: Response;
@@ -104,7 +106,7 @@ async function call<T>(method: "GET" | "POST", path: string, payload?: unknown):
         },
         body: payload === undefined ? undefined : JSON.stringify(payload),
         cache: "no-store",
-        signal: AbortSignal.timeout(TIMEOUT_MS),
+        signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (error) {
       console.error(`Salesforce ${method} ${path} failed`, error);
@@ -124,6 +126,25 @@ async function call<T>(method: "GET" | "POST", path: string, payload?: unknown):
 const enc = encodeURIComponent;
 
 export const salesforceBackend: ShopBackend = {
+  saveResume: async (walletId, orderId, pdf) =>
+    (await call<{ order: Order }>("POST", `wallets/${enc(walletId)}/orders/${enc(orderId)}/resume`, { pdf }, 30_000))
+      .order,
+
+  startChat: async (walletId) =>
+    (await call<{ chatKey: string }>("POST", `wallets/${enc(walletId)}/chat/start`, {})).chatKey,
+
+  sendChat: (walletId, chatKey, text, sessionId) =>
+    call<ChatReply>(
+      "POST",
+      `wallets/${enc(walletId)}/chat/message`,
+      { chatKey, text, ...(sessionId ? { sessionId } : {}) },
+      CHAT_TIMEOUT_MS,
+    ),
+
+  sendEmail: async (to, subject, html) => {
+    await call("POST", "email", { ...(to ? { to } : { toOwner: true }), subject, html });
+  },
+
   getCatalog: () => call<Catalog>("GET", "catalog"),
 
   verifySignIn: (email, issuedAt, referralCode) =>

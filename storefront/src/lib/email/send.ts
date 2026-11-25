@@ -1,7 +1,9 @@
 import "server-only";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import nodemailer from "nodemailer";
 import { Resend } from "resend";
+import { getBackend } from "../backend";
 import { getEnv } from "../env";
 import type { EmailContent } from "./templates";
 
@@ -19,12 +21,38 @@ export function localEmailDir(): string {
 }
 
 /**
- * Sends through Resend when RESEND_API_KEY is set; otherwise writes the email as JSON to
+ * Sends through Gmail when SMTP_USER and SMTP_PASS are set, else through Resend when RESEND_API_KEY is set, else through Salesforce on Vercel (or when
+ * EMAIL_PROVIDER=salesforce); otherwise writes the email as JSON to
  * .local-email/ for local development. Returns false on failure (best effort, design section 6).
  */
 export async function sendEmail(email: OutgoingEmail): Promise<boolean> {
   const env = getEnv();
   try {
+    if (env.SMTP_USER && env.SMTP_PASS) {
+      const transport = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        auth: { user: env.SMTP_USER, pass: env.SMTP_PASS.replace(/\s/g, "") },
+        connectionTimeout: 10_000,
+        greetingTimeout: 10_000,
+        socketTimeout: 15_000,
+      });
+      await transport.sendMail({
+        from: { name: "Piyush's Points Shop", address: env.SMTP_USER },
+        to: email.to,
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
+        ...(email.replyTo ? { replyTo: email.replyTo } : {}),
+      });
+      return true;
+    }
+    if (!env.RESEND_API_KEY && (env.VERCEL_ENV || env.EMAIL_PROVIDER === "salesforce")) {
+      const toOwner = email.kind === "owner-alert" || email.kind === "visitor-message";
+      await getBackend().sendEmail(toOwner ? null : email.to, email.subject, email.html);
+      return true;
+    }
     if (!env.RESEND_API_KEY) {
       const dir = localEmailDir();
       await mkdir(dir, { recursive: true });

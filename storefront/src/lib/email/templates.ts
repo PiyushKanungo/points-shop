@@ -20,7 +20,7 @@ function layout(title: string, bodyHtml: string): string {
 <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:12px;padding:28px;border:1px solid #ece4d8">
 <h1 style="font-size:20px;margin:0 0 16px">${escapeHtml(title)}</h1>
 ${bodyHtml}
-<p style="color:#8a7f73;font-size:12px;margin-top:28px">Points Shop is Piyush's personal portfolio project. You're getting this because someone (hopefully you) used this email on the shop.</p>
+<p style="color:#8a7f73;font-size:12px;margin-top:28px">Piyush's Points Shop is a personal portfolio project. You're getting this because someone (hopefully you) used this email on the shop.</p>
 </div></body></html>`;
 }
 
@@ -41,18 +41,18 @@ export function nextStepFor(type: FulfilmentType): string {
 
 export function magicLinkEmail(link: string): EmailContent {
   return {
-    subject: "Your Points Shop sign-in link",
+    subject: "Your sign-in link for Piyush's Points Shop",
     html: layout(
-      "Sign in to Points Shop",
+      "Sign in to Piyush's Points Shop",
       `<p>Tap the button and then press <strong>Sign in</strong>. The link works once and expires in 15 minutes.</p>${button(link, "Open sign-in page")}<p style="font-size:13px;color:#6b6157">Didn't ask for this? You can ignore this email.</p>`,
     ),
-    text: `Sign in to Points Shop\n\nOpen this link, then press Sign in. It works once and expires in 15 minutes:\n${link}\n\nDidn't ask for this? Ignore this email.`,
+    text: `Sign in to Piyush's Points Shop\n\nOpen this link, then press Sign in. It works once and expires in 15 minutes:\n${link}\n\nDidn't ask for this? Ignore this email.`,
   };
 }
 
 export function welcomeEmail(siteUrl: string, balance: number): EmailContent {
   return {
-    subject: "Welcome to Points Shop: 50 points to start",
+    subject: "Welcome to Piyush's Points Shop: 50 points to start",
     html: layout(
       "You're in. Here are 50 points.",
       `<p>Your balance is <strong>${balance} points</strong>. A few small things earn more: explore the site, leave feedback, say hi on LinkedIn.</p>${button(`${siteUrl}/#earn`, "See ways to earn")}<p>When you have enough, spend them on a real SFCC question, a resume review, a chat or a mock interview.</p>`,
@@ -90,6 +90,14 @@ export function ownerOrderAlert(siteUrl: string, email: string, orders: Order[])
       `<p>${escapeHtml(email)} ordered: ${escapeHtml(list)}.</p><p>Open the Points Shop app in Salesforce (Open Orders) to fulfil it.</p><p style="font-size:13px">${escapeHtml(siteUrl)}</p>`,
     ),
     text: `${email} ordered: ${list}.\nOpen the Points Shop app in Salesforce (Open Orders).`,
+  };
+}
+
+export function ownerDetailsAlert(email: string, order: Order, detail: string): EmailContent {
+  return {
+    subject: `${order.orderNumber} is ready to fulfil`,
+    html: layout("Order ready to fulfil", `<p>${escapeHtml(order.orderNumber)}: ${escapeHtml(order.offering.name)} for ${escapeHtml(email)}.</p><p>${escapeHtml(detail)}</p>`),
+    text: `${order.orderNumber}: ${order.offering.name} for ${email}.\n${detail}`,
   };
 }
 

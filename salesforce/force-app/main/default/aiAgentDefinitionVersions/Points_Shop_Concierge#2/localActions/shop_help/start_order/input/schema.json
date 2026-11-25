@@ -1,0 +1,21 @@
+{
+  "required" : [ "sessionKey", "offeringSlug" ],
+  "unevaluatedProperties" : false,
+  "properties" : {
+    "offeringSlug" : {
+      "title" : "Offering Slug",
+      "description" : "The slug of the offering to order, taken from get_catalog.",
+      "lightning:type" : "lightning__textType",
+      "lightning:isPII" : false,
+      "copilotAction:isUserInput" : false
+    },
+    "sessionKey" : {
+      "title" : "Session Key",
+      "description" : "The chatKey from the current message, copied exactly.",
+      "lightning:type" : "lightning__textType",
+      "lightning:isPII" : false,
+      "copilotAction:isUserInput" : false
+    }
+  },
+  "lightning:type" : "lightning__objectType"
+}

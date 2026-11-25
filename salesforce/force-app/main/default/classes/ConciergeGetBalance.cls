@@ -1,16 +1,16 @@
 /**
  * Concierge action: the signed-in visitor's balance and recent points history.
- * walletId is bound by the agent to a server-set session variable; the model cannot supply it.
+ * The wallet comes from the chat key only.
  * Runs as the agent user, so it is without sharing and reads only the given wallet.
  */
 public without sharing class ConciergeGetBalance {
   public class Input {
     @InvocableVariable(
-      label='Wallet ID'
-      description='Set by the server for the signed-in visitor.'
+      label='Session key'
+      description='The chatKey from the current message.'
       required=true
     )
-    public String walletId;
+    public String sessionKey;
   }
 
   public class Output {
@@ -29,7 +29,7 @@ public without sharing class ConciergeGetBalance {
     for (Input input : inputs) {
       Output output = new Output();
       try {
-        ShopDtos.WalletDto wallet = WalletService.getWallet(Id.valueOf(input.walletId));
+        ShopDtos.WalletDto wallet = WalletService.getWallet(ConciergeService.walletFor(input.sessionKey));
         output.balance = wallet.balance;
         List<String> lines = new List<String>();
         for (Integer i = 0; i < Math.min(5, wallet.recentEntries.size()); i++) {

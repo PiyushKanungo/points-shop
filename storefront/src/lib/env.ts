@@ -18,6 +18,11 @@ const schema = z
     BMAC_URL: z.url().optional(),
     GITHUB_URL: z.url().optional(),
     LINKEDIN_URL: z.url().optional(),
+    /** Gmail address and app password: the preferred sender when set. */
+    SMTP_USER: z.email().optional(),
+    SMTP_PASS: z.string().optional(),
+    /** "salesforce" sends email through the org locally too; on Vercel it is the default without Resend. */
+    EMAIL_PROVIDER: z.enum(["salesforce"]).optional(),
     BLOB_READ_WRITE_TOKEN: z.string().optional(),
     CALCOM_WEBHOOK_SECRET: z.string().optional(),
     STUB_FAIL: z.enum(["catalog", "all"]).optional(),
@@ -32,7 +37,7 @@ const schema = z
         }
       }
     }
-    if (env.VERCEL_ENV && !env.RESEND_API_KEY) {
+    if (env.VERCEL_ENV && !env.RESEND_API_KEY && env.SHOP_BACKEND !== "salesforce") {
       // Vercel's filesystem is read-only, so the local email log cannot work there.
       ctx.addIssue({ code: "custom", path: ["RESEND_API_KEY"], message: "RESEND_API_KEY is required on Vercel" });
     }

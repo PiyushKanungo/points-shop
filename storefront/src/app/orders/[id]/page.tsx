@@ -11,6 +11,7 @@ import { getBackend } from "@/lib/backend";
 import type { Order } from "@/lib/backend/types";
 import { getCachedCatalog } from "@/lib/catalog";
 import { nextStepFor } from "@/lib/email/templates";
+import { getEnv } from "@/lib/env";
 import { ShopError } from "@/lib/errors";
 import { requirePageSession } from "@/lib/page-session";
 import type { Session } from "@/lib/session";
@@ -73,7 +74,7 @@ async function OrderDetails({ params }: Pick<PageProps<"/orders/[id]">, "params"
 
       {order.status === "Awaiting Details" && (
         <section className="rounded-xl border border-line bg-paper p-5">
-          <FulfilmentForm orderId={order.id} fulfilmentType={order.offering.fulfilmentType} bookingLink={bookingLink} />
+          <FulfilmentForm orderId={order.id} fulfilmentType={order.offering.fulfilmentType} bookingLink={bookingLink} privateResume={!getEnv().BLOB_READ_WRITE_TOKEN} />
         </section>
       )}
 
@@ -81,7 +82,10 @@ async function OrderDetails({ params }: Pick<PageProps<"/orders/[id]">, "params"
         <section className="space-y-1 text-sm">
           <h2 className="font-semibold">What you sent</h2>
           {order.question && <p className="whitespace-pre-wrap text-muted">{order.question}</p>}
-          {order.resumeUrl && (
+          {order.resumeUrl && !order.resumeUrl.includes(".blob.vercel-storage.com/") && (
+            <p className="text-muted">Your resume (PDF) is saved privately with this order.</p>
+          )}
+          {order.resumeUrl?.includes(".blob.vercel-storage.com/") && (
             <p>
               <a href={order.resumeUrl} target="_blank" rel="noopener" className="text-accent underline">
                 Your resume (PDF)
@@ -89,7 +93,7 @@ async function OrderDetails({ params }: Pick<PageProps<"/orders/[id]">, "params"
             </p>
           )}
           {order.bookingStart && (
-            <p className="text-muted">Booked for {new Date(order.bookingStart).toLocaleString("en-IN", DATE_TIME)}</p>
+            <p className="text-muted">Time: {new Date(order.bookingStart).toLocaleString("en-IN", { ...DATE_TIME, timeZone: "Asia/Kolkata" })} IST</p>
           )}
         </section>
       )}
@@ -114,7 +118,7 @@ async function OrderDetails({ params }: Pick<PageProps<"/orders/[id]">, "params"
         </div>
         <div>
           <dt className="font-semibold">Placed</dt>
-          <dd className="text-muted">{new Date(order.createdAt).toLocaleString("en-IN", DATE_TIME)}</dd>
+          <dd className="text-muted">{new Date(order.createdAt).toLocaleString("en-IN", { ...DATE_TIME, timeZone: "Asia/Kolkata" })}</dd>
         </div>
         {order.deliveredAt && (
           <div>

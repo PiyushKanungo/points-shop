@@ -1,5 +1,11 @@
 # Put the storefront online
 
+Quick path, from `storefront/`, with `.env.local` filled in: run `vercel login`, then
+`node scripts/deploy.mjs`. It links the project, copies the settings and deploys. Email goes through
+Gmail when `SMTP_USER` and `SMTP_PASS` (an app password) are set, else Resend, else Salesforce.
+Resumes go to private Salesforce files unless a Blob store is connected, and visitors book on the
+site unless an offering has a Booking URL. Resend, Blob and Cal.com below are therefore optional.
+
 Do these after the Salesforce org works ([setup-org.md](./setup-org.md), phases 1 and 2). Each step
 says what you need to do yourself and what to send back.
 
