@@ -10,7 +10,7 @@ front, and Salesforce (Apex, Flows, Agentforce) as the back end, connected by a 
 ```text
 Browser ──> Next.js on Vercel ──(OAuth client credentials, Apex REST)──> Salesforce Developer Edition
                  │                                                        objects, Apex service classes,
-                 └── Resend (email), Vercel Blob (resumes), Cal.com        Flows, Agentforce concierge
+                 └── Email (Gmail, Resend or Salesforce), Vercel BotID     Flows, Agentforce concierge
 ```
 
 ## Repository layout
@@ -28,14 +28,16 @@ Browser ──> Next.js on Vercel ──(OAuth client credentials, Apex REST)─
 
 ## Status
 
+Live at [points-shop.vercel.app](https://points-shop.vercel.app).
+
 | Milestone | Status |
 | --- | --- |
-| 1 Salesforce foundation (objects, ledger, triggers, seed data) | Done: deployed, seed data loaded, Agentforce test run (see docs/spike-agentforce.md) |
-| 2 Earn and checkout (service classes, REST API) | Deployed; 74 Apex tests pass, 96% coverage; API user and External Client App still to set up |
-| 3 Storefront | Works locally against the real org (CUJ 1 verified); not yet deployed to Vercel |
-| 4 Fulfilment (details, resume upload, Cal.com, Flows) | Built; question → delivered email → review verified against the org; resume upload and Cal.com need Vercel Blob and Cal.com set up |
-| 5 Agentforce concierge | Test passed: wallet binding works; agent user created; Agent API call still to verify |
-| 6 Launch | Not started |
+| 1 Salesforce foundation (objects, ledger, triggers, seed data) | Done (Agentforce test results in docs/spike-agentforce.md) |
+| 2 Earn and checkout (service classes, REST API) | Done: 96 Apex tests pass, 94% org-wide coverage (25 November 2026) |
+| 3 Storefront | Done: deployed to Vercel against the Salesforce org |
+| 4 Fulfilment (details, private resume upload, on-site booking, Flows) | Done: order status Flows active |
+| 5 Agentforce concierge | Done: agent v2 active, called from the storefront chat through Apex |
+| 6 Launch | Done: deployed to production with bot protection and email limits |
 
 ## Run the storefront locally
 
