@@ -49,6 +49,17 @@ function addEntry(wallet: Wallet, amount: number, entryType: Wallet["recentEntri
 }
 
 export const stubBackend: ShopBackend = {
+  async claimNotice() {
+    return null;
+  },
+
+  async releaseNotice() {},
+
+  async allow() {
+    failIfAsked(false);
+    return true;
+  },
+
   async saveResume(walletId: string, orderId: string): Promise<Order> {
     return stubBackend.saveDetails(walletId, orderId, { resumeUrl: "https://example.com/private-resume" });
   },

@@ -38,6 +38,33 @@ private class ShopPublicServicesTest {
   }
 
   @IsTest
+  static void attemptsAreLimitedPerWindow() {
+    Map<String, Object> attempt = new Map<String, Object>{
+      'key' => 'abc',
+      'max' => 2,
+      'windowMinutes' => 60
+    };
+    for (Integer i = 0; i < 2; i++) {
+      Assert.areEqual(200, post('limit', attempt));
+      Assert.isTrue(RestContext.response.responseBody.toString().contains('true'));
+    }
+    post('limit', attempt);
+    Assert.isTrue(RestContext.response.responseBody.toString().contains('false'));
+
+    Rate_Limit__c row = [SELECT Id FROM Rate_Limit__c];
+    update new Rate_Limit__c(Id = row.Id, Resets_At__c = System.now().addMinutes(-1));
+    post('limit', attempt);
+    Assert.isTrue(RestContext.response.responseBody.toString().contains('true'), 'A new window');
+
+    update new Rate_Limit__c(Id = row.Id, Resets_At__c = System.now().addMinutes(-1));
+    attempt.put('key', 'other');
+    post('limit', attempt);
+    Assert.areEqual(1, [SELECT COUNT() FROM Rate_Limit__c], 'Expired rows are removed');
+    attempt.put('max', 0);
+    Assert.areEqual(400, post('limit', attempt));
+  }
+
+  @IsTest
   static void chatHelpers() {
     Assert.areEqual('a', ConciergeService.textOf('{"type":"Text","value":"a"}'));
     Assert.areEqual('plain', ConciergeService.textOf('plain'));

@@ -1629,3 +1629,8 @@ orders from chat; the order appears in Salesforce and the balance updates.
   on sign-out. The chat route sends the order emails, so the planned chat-order Flow is not needed.
 - Orders take the wallet's owner, so orders placed by the agent user are visible to the storefront.
 - `Booking_Url_Required` is inactive: booking happens on the site when there is no Booking URL.
+- Bots: Vercel BotID guards sign-in, tasks, checkout and chat. Turnstile runs only with real keys.
+  `RateLimitService` caps sign-in emails (5 per address and 20 per IP an hour, 300 a day).
+- Delivered and cancelled emails: the Flows call `OrderNotifier`, which pings the storefront. The
+  storefront claims the notice in Salesforce (once per status) and emails through Gmail.
+- A referred visitor keeps their own referral code; a `+` alias of the same mailbox earns nothing.

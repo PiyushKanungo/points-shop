@@ -3,6 +3,7 @@
 import { Turnstile } from "@marsidev/react-turnstile";
 import Link from "next/link";
 import { useState } from "react";
+import { isRealTurnstileKey } from "@/lib/turnstile-key";
 import { refreshShop } from "./refresh";
 
 export function MessageForm({
@@ -17,7 +18,7 @@ export function MessageForm({
   placeholder: string;
 }) {
   const [message, setMessage] = useState("");
-  const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(isRealTurnstileKey(siteKey) ? null : "not-configured");
   const [state, setState] = useState<"idle" | "busy" | "sent">("idle");
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -76,7 +77,9 @@ export function MessageForm({
         />
         <p className="text-xs text-muted">{message.length}/2000</p>
       </div>
-      <Turnstile siteKey={siteKey} onSuccess={setToken} onExpire={() => setToken(null)} options={{ size: "flexible" }} />
+      {isRealTurnstileKey(siteKey) && (
+        <Turnstile siteKey={siteKey} onSuccess={setToken} onExpire={() => setToken(null)} options={{ size: "flexible" }} />
+      )}
       {error && (
         <p role="alert" className="text-sm text-accent">
           {error}

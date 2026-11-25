@@ -93,6 +93,23 @@ export function ownerOrderAlert(siteUrl: string, email: string, orders: Order[])
   };
 }
 
+export function orderStatusEmail(siteUrl: string, order: Order): EmailContent {
+  const link = `${siteUrl}/orders/${encodeURIComponent(order.id)}`;
+  const what = `${order.orderNumber}: ${order.offering.name}`;
+  if (order.status === "Delivered") {
+    return {
+      subject: `Delivered: ${what}`,
+      html: layout("Your order is delivered", `<p><strong>${escapeHtml(what)}</strong></p><p>If it helped, a short review earns you 75 points.</p>${button(link, "Review the order")}`),
+      text: `Your order is delivered.\n\n${what}\n\nA short review earns you 75 points: ${link}`,
+    };
+  }
+  return {
+    subject: `Cancelled: ${what} (points returned)`,
+    html: layout("Your order was cancelled", `<p><strong>${escapeHtml(what)}</strong></p><p>Its ${order.pointsSpent} points are back in your balance.</p>${button(`${siteUrl}/account`, "See your balance")}`),
+    text: `Your order was cancelled.\n\n${what}\n\nIts ${order.pointsSpent} points are back in your balance: ${siteUrl}/account`,
+  };
+}
+
 export function ownerDetailsAlert(email: string, order: Order, detail: string): EmailContent {
   return {
     subject: `${order.orderNumber} is ready to fulfil`,

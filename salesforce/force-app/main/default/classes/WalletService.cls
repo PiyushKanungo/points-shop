@@ -159,13 +159,24 @@ public inherited sharing class WalletService {
   @TestVisible
   private static String firstReferralCodeForTest;
 
+  @TestVisible
+  private static String mailbox(String email) {
+    String domain = email.substringAfterLast('@');
+    String name = email.substringBeforeLast('@').substringBefore('+');
+    if (domain == 'gmail.com' || domain == 'googlemail.com') {
+      name = name.remove('.');
+      domain = 'gmail.com';
+    }
+    return name + '@' + domain;
+  }
+
   private static void applyReferral(Wallet__c wallet, String referralCode) {
     if (String.isBlank(referralCode)) {
       return;
     }
     String code = referralCode.trim().toUpperCase();
     List<Wallet__c> referrers = [
-      SELECT Id
+      SELECT Id, Email__c
       FROM Wallet__c
       WHERE Referral_Code__c = :code AND Id != :wallet.Id
       LIMIT 1
@@ -173,8 +184,11 @@ public inherited sharing class WalletService {
     if (referrers.isEmpty()) {
       return; // unknown codes are ignored
     }
-    wallet.Referred_By__c = referrers[0].Id;
-    update wallet;
+    if (mailbox(referrers[0].Email__c) == mailbox(wallet.Email__c)) {
+      return; // the same mailbox under a + alias
+    }
+    // A fresh record: the inserted one still holds a null referral code and would erase it.
+    update new Wallet__c(Id = wallet.Id, Referred_By__c = referrers[0].Id);
     try {
       EarnService.awardSystemTask(referrers[0].Id, 'referral', String.valueOf(wallet.Id));
     } catch (ShopException e) {

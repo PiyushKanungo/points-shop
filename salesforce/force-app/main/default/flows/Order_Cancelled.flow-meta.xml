@@ -1,41 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
     <actionCalls>
-        <name>Send_Cancelled_Email</name>
-        <label>Send Cancelled Email</label>
+        <name>Notify_Visitor</name>
+        <label>Notify Visitor</label>
         <locationX>176</locationX>
         <locationY>323</locationY>
-        <actionName>emailSimple</actionName>
-        <actionType>emailSimple</actionType>
+        <actionName>OrderNotifier</actionName>
+        <actionType>apex</actionType>
         <faultConnector>
             <targetReference>Create_Failure_Task</targetReference>
         </faultConnector>
         <flowTransactionModel>CurrentTransaction</flowTransactionModel>
         <inputParameters>
-            <name>emailAddresses</name>
+            <name>orderIds</name>
             <value>
-                <elementReference>$Record.Wallet__r.Email__c</elementReference>
+                <elementReference>$Record.Id</elementReference>
             </value>
         </inputParameters>
-        <inputParameters>
-            <name>emailSubject</name>
-            <value>
-                <elementReference>SubjectText</elementReference>
-            </value>
-        </inputParameters>
-        <inputParameters>
-            <name>emailBody</name>
-            <value>
-                <elementReference>BodyText</elementReference>
-            </value>
-        </inputParameters>
-        <inputParameters>
-            <name>sendRichBody</name>
-            <value>
-                <booleanValue>false</booleanValue>
-            </value>
-        </inputParameters>
-        <nameSegment>emailSimple</nameSegment>
+        <nameSegment>OrderNotifier</nameSegment>
     </actionCalls>
     <apiVersion>65.0</apiVersion>
     <description>Emails the visitor when Piyush cancels an order; the points were refunded by ShopOrderTriggerHandler.</description>
@@ -103,7 +85,7 @@
         <locationX>50</locationX>
         <locationY>0</locationY>
         <connector>
-            <targetReference>Send_Cancelled_Email</targetReference>
+            <targetReference>Notify_Visitor</targetReference>
         </connector>
         <doesRequireRecordChangedToMeetCriteria>true</doesRequireRecordChangedToMeetCriteria>
         <filterLogic>and</filterLogic>
@@ -119,23 +101,6 @@
         <triggerType>RecordAfterSave</triggerType>
     </start>
     <status>Active</status>
-    <textTemplates>
-        <name>BodyText</name>
-        <isViewedAsPlainText>true</isViewedAsPlainText>
-        <text>Hi,
-
-Your order {!$Record.Name} ({!$Record.Service__r.Name}) has been cancelled, and its points are back in your balance.
-
-If you didn't expect this, just reply to Piyush on LinkedIn or through the shop's contact page.
-{!$Label.Shop_Storefront_Url}/account
-
-Piyush</text>
-    </textTemplates>
-    <textTemplates>
-        <name>SubjectText</name>
-        <isViewedAsPlainText>true</isViewedAsPlainText>
-        <text>Cancelled: {!$Record.Name}, {!$Record.Service__r.Name} (points returned)</text>
-    </textTemplates>
     <textTemplates>
         <name>FailureSubject</name>
         <isViewedAsPlainText>true</isViewedAsPlainText>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/api";
+import { assertHuman } from "@/lib/bot-check";
 import { getBackend } from "@/lib/backend";
 import { clearCart, getCart } from "@/lib/cart";
 import { sendEmail } from "@/lib/email/send";
@@ -11,6 +12,7 @@ import { assertSameOrigin } from "@/lib/origin";
 export async function POST(request: Request) {
   try {
     assertSameOrigin(request);
+    await assertHuman(request, undefined, false);
     const session = await requireSession();
     const cart = await getCart();
     if (cart.slugs.length === 0) throw new ShopError("VALIDATION", "Your cart is empty.");

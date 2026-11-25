@@ -126,6 +126,18 @@ async function call<T>(method: "GET" | "POST", path: string, payload?: unknown, 
 const enc = encodeURIComponent;
 
 export const salesforceBackend: ShopBackend = {
+  claimNotice: async (orderId) => {
+    const r = await call<{ due: boolean; email: string; order: Order }>("POST", `notices/${enc(orderId)}/claim`, {});
+    return r.due ? { email: r.email, order: r.order } : null;
+  },
+
+  releaseNotice: async (orderId) => {
+    await call("POST", `notices/${enc(orderId)}/release`, {});
+  },
+
+  allow: async (key, max, windowMinutes) =>
+    (await call<{ allowed: boolean }>("POST", "limit", { key, max, windowMinutes })).allowed,
+
   saveResume: async (walletId, orderId, pdf) =>
     (await call<{ order: Order }>("POST", `wallets/${enc(walletId)}/orders/${enc(orderId)}/resume`, { pdf }, 30_000))
       .order,

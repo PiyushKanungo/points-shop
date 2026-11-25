@@ -37,4 +37,16 @@ private class WalletServiceRaceTest {
       Assert.areNotEqual(StatusCode.DUPLICATE_VALUE, e.getDmlType(0));
     }
   }
+
+  @IsTest
+  static void aReferredVisitorKeepsTheirOwnCodeAndAliasesEarnNothing() {
+    Wallet__c referrer = new Wallet__c(Email__c = 'ref.errer@gmail.com');
+    insert referrer;
+    String code = [SELECT Referral_Code__c FROM Wallet__c WHERE Id = :referrer.Id].Referral_Code__c;
+    ShopDtos.VerifyResult friend = WalletService.verifySignIn('friend@example.com', 1762900000000L, code);
+    Assert.areEqual(8, friend.wallet.referralCode.length());
+    Assert.areEqual(100, TestDataFactory.balance(referrer.Id));
+    WalletService.verifySignIn('referrer+me@gmail.com', 1762900000000L, code);
+    Assert.areEqual(100, TestDataFactory.balance(referrer.Id), 'Same mailbox');
+  }
 }

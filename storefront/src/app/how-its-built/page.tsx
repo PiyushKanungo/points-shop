@@ -24,7 +24,7 @@ function ArchitectureDiagram() {
       <title id="arch-title">System architecture</title>
       <desc id="arch-desc">
         The browser talks only to the Next.js storefront on Vercel. The storefront server calls Salesforce through
-        Apex REST using OAuth client credentials, and uses Cloudflare Turnstile for bot checks. Salesforce Flows send the emails.
+        Apex REST using OAuth client credentials, and uses Vercel BotID for bot checks. Salesforce Flows send the emails.
       </desc>
       <defs>
         <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -49,7 +49,7 @@ function ArchitectureDiagram() {
         <text x="605" y="186" textAnchor="middle" fontSize="12" fill="var(--muted)">custom objects + rules</text>
 
         <rect x="250" y="235" width="160" height="44" rx="10" fill="var(--card)" stroke="var(--line)" strokeWidth="2" />
-        <text x="330" y="262" textAnchor="middle" fontSize="12">Cloudflare Turnstile</text>
+        <text x="330" y="262" textAnchor="middle" fontSize="12">Vercel BotID</text>
 
         <line x1="150" y1="150" x2="226" y2="150" stroke="var(--muted)" strokeWidth="2" markerEnd="url(#arrow)" />
         <line x1="430" y1="150" x2="506" y2="150" stroke="var(--muted)" strokeWidth="2" markerEnd="url(#arrow)" />

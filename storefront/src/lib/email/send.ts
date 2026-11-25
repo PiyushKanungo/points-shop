@@ -7,7 +7,7 @@ import { getBackend } from "../backend";
 import { getEnv } from "../env";
 import type { EmailContent } from "./templates";
 
-export type EmailKind = "magic-link" | "welcome" | "order-confirmed" | "owner-alert" | "visitor-message";
+export type EmailKind = "magic-link" | "welcome" | "order-confirmed" | "owner-alert" | "visitor-message" | "order-status";
 
 export interface OutgoingEmail extends EmailContent {
   kind: EmailKind;

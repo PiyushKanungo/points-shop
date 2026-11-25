@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { assertHuman } from "@/lib/bot-check";
 import { readJson, requireSession } from "@/lib/api";
 import { getBackend } from "@/lib/backend";
 import { sendEmail } from "@/lib/email/send";
@@ -7,7 +8,6 @@ import { visitorMessageEmail } from "@/lib/email/templates";
 import { getEnv } from "@/lib/env";
 import { errorResponse, ShopError } from "@/lib/errors";
 import { assertSameOrigin } from "@/lib/origin";
-import { clientIp, verifyTurnstile } from "@/lib/turnstile";
 
 const HONOUR_TASKS = new Set(["explore", "linkedin-post", "linkedin-hi"]);
 const FORM_TASKS: Record<string, "feedback" | "contact"> = { feedback: "feedback", "email-piyush": "contact" };
@@ -24,14 +24,15 @@ export async function POST(request: Request, ctx: RouteContext<"/api/tasks/[key]
     const { key } = await ctx.params;
     const body = await readJson(request, bodySchema);
     const backend = getBackend();
+    const form = FORM_TASKS[key];
+    await assertHuman(request, body.turnstileToken, Boolean(form));
 
     if (HONOUR_TASKS.has(key)) {
       return NextResponse.json(await backend.completeTask(session.walletId, key));
     }
 
-    const kind = FORM_TASKS[key];
+    const kind = form;
     if (kind) {
-      await verifyTurnstile(body.turnstileToken, clientIp(request));
       const message = body.message?.trim() ?? "";
       if (message.length < 10) throw new ShopError("VALIDATION", "Write at least 10 characters.");
       // Best effort: the message is also saved as evidence in Salesforce, so the task counts

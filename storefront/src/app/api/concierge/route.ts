@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { readJson, requireSession } from "@/lib/api";
+import { assertHuman } from "@/lib/bot-check";
 import { getBackend } from "@/lib/backend";
 import { clearChat, getChat, setChat } from "@/lib/chat-cookie";
 import { sendEmail } from "@/lib/email/send";
@@ -21,6 +22,7 @@ const bodySchema = z.object({
 export async function POST(request: Request) {
   try {
     assertSameOrigin(request);
+    await assertHuman(request, undefined, false);
     const session = await requireSession();
     const { message, fresh } = await readJson(request, bodySchema);
     const backend = getBackend();

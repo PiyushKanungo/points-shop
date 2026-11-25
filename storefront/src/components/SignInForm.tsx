@@ -2,10 +2,11 @@
 
 import { Turnstile } from "@marsidev/react-turnstile";
 import { useEffect, useState } from "react";
+import { isRealTurnstileKey } from "@/lib/turnstile-key";
 
 export function SignInForm({ siteKey }: { siteKey: string }) {
   const [email, setEmail] = useState("");
-  const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(isRealTurnstileKey(siteKey) ? null : "not-configured");
   const [state, setState] = useState<"idle" | "busy" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -77,7 +78,9 @@ export function SignInForm({ siteKey }: { siteKey: string }) {
           placeholder="you@example.com"
         />
       </div>
-      <Turnstile siteKey={siteKey} onSuccess={setToken} onExpire={() => setToken(null)} options={{ size: "flexible" }} />
+      {isRealTurnstileKey(siteKey) && (
+        <Turnstile siteKey={siteKey} onSuccess={setToken} onExpire={() => setToken(null)} options={{ size: "flexible" }} />
+      )}
       {error && (
         <p role="alert" className="text-sm text-accent">
           {error}

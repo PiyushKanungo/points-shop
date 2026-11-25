@@ -99,6 +99,26 @@ global with sharing class ShopApi {
         );
         return WalletService.verifySignIn(r.email, r.issuedAt, r.referralCode);
       }
+      if (n == 3 && path[0] == 'notices') {
+        Id noticeOrderId = toId(path[1], Shop_Order__c.SObjectType);
+        if (path[2] == 'claim') {
+          OrderNotifier.Claim claim = OrderNotifier.claim(noticeOrderId);
+          return new Map<String, Object>{
+            'due' => claim.due,
+            'email' => claim.email,
+            'order' => claim.shopOrder
+          };
+        }
+        if (path[2] == 'release') {
+          OrderNotifier.release(noticeOrderId);
+          return new Map<String, Object>{ 'ok' => true };
+        }
+      }
+      if (n == 1 && path[0] == 'limit') {
+        return RateLimitService.check(
+          (RateLimitService.Request) parse(body, RateLimitService.Request.class, false)
+        );
+      }
       if (n == 1 && path[0] == 'email') {
         ShopEmailService.send(
           (ShopEmailService.Request) parse(body, ShopEmailService.Request.class, false)

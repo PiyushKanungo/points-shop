@@ -93,6 +93,11 @@ export interface ChatReply {
 }
 
 export interface ShopBackend {
+  /** Counts one attempt for the key; false when the window's limit is used up. */
+  allow(key: string, max: number, windowMinutes: number): Promise<boolean>;
+  /** The delivered or cancelled email that is due for the order, once; null when none is. */
+  claimNotice(orderId: string): Promise<{ email: string; order: Order } | null>;
+  releaseNotice(orderId: string): Promise<void>;
   saveResume(walletId: string, orderId: string, pdfBase64: string): Promise<Order>;
   startChat(walletId: string): Promise<string>;
   sendChat(walletId: string, chatKey: string, text: string, sessionId?: string): Promise<ChatReply>;
