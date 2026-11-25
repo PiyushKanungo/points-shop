@@ -22,14 +22,28 @@ if (wallets.isEmpty()) {
   ];
   Integer entries = [SELECT COUNT() FROM Points_Ledger__c WHERE Wallet__c = :walletId];
 
+  // Resumes stored as private Salesforce files on the orders.
+  Set<Id> fileIds = new Set<Id>();
+  Set<Id> orderIds = new Map<Id, Shop_Order__c>(orders).keySet();
+  if (!orderIds.isEmpty()) {
+    for (ContentDocumentLink link : [
+      SELECT ContentDocumentId
+      FROM ContentDocumentLink
+      WHERE LinkedEntityId IN :orderIds
+    ]) {
+      fileIds.add(link.ContentDocumentId);
+    }
+  }
+
   TriggerHandler.bypass('TaskCompletionTriggerHandler');
   delete completions;
+  delete [SELECT Id FROM ContentDocument WHERE Id IN :fileIds];
   delete orders;
   delete wallets;
   TriggerHandler.clearBypass('TaskCompletionTriggerHandler');
 
   for (Shop_Order__c o : orders) {
-    if (o.Resume_Url__c != null) {
+    if (o.Resume_Url__c != null && o.Resume_Url__c.contains('.blob.vercel-storage.com')) {
       System.debug('Delete this Blob file by hand: ' + o.Resume_Url__c);
     }
   }
