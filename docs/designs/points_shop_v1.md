@@ -1521,3 +1521,100 @@ typecheck, unit and route tests, build and the e2e journey pass. Live (after
 Vercel setup): a question order goes Awaiting Details → In Progress, Piyush
 marks it Delivered in Salesforce, the visitor gets the delivered email and can
 review for +75 points.
+
+--------------------------------------------------------------------------------
+
+## Milestone 5 Implementation Plan (concierge)
+
+Milestone 5 adds the Agentforce concierge (Goal 6, CUJ 5) using what the
+milestone 1 test proved: an Agent Script state variable seeded when the session
+starts can feed action inputs and the model cannot change it. Paths: `FA` =
+`salesforce/force-app/main/default`, `SF` = `storefront/src`.
+
+### Decisions for this milestone
+
+| Topic | Choice |
+| --- | --- |
+| Authoring | Agent Script authoring bundle `Points_Shop_Concierge`, published with `sf agent publish authoring-bundle` and activated with `sf agent activate`. |
+| Wallet binding | State variables `WalletId` and `SessionKey` (`mutable string`), seeded by the storefront server in the Agent API start-session `variables`. Every action takes them with `with walletId=@variables.WalletId` / `with sessionKey=@variables.SessionKey`; no action sets them. |
+| Running user | The agent user created in the milestone 1 test (Einstein Agent licence). Permission set `Shop_Agent` grants class access to the three action classes only. |
+| Sharing | Action classes are `without sharing` and filter every query by the bound wallet ID; they call the existing service classes, so all points rules still apply. |
+| Agent API access | Same External Client App and integration user; scopes `chatbot_api` and `sfap_api` added, and JWT-based access tokens turned on (Agent API requirements). Calls go to `https://api.salesforce.com/einstein/ai-agent/v1`. |
+| Session lifetime | One agent session per chat panel opening, kept in an `httpOnly` cookie `ps_chat` (session ID); the `SessionKey` is a fresh UUID per agent session. An expired or unknown session is restarted once. |
+| Latency | Replies take about 10–11 s. The route sets `export const maxDuration = 30`; the panel shows a "thinking" state and starts the session when it opens. |
+| Stub | With `SHOP_BACKEND=stub`, a rule-based stub concierge answers balance, earn and catalogue questions from the stub backend, so the panel works locally and in e2e tests. |
+
+### Files
+
+#### Salesforce
+
+1.  **`FA/classes/ConciergeGetBalance.cls`** — Invocable "Concierge: Get
+    balance". Input `walletId` (required). Outputs `balance` (Integer) and
+    `summary` (the last 5 ledger reasons and amounts as text).
+2.  **`FA/classes/ConciergeGetCatalog.cls`** — Invocable "Concierge: Get
+    catalogue". Input `walletId` (optional). Outputs `offerings` (text: name,
+    points, delivery promise, one line each), `tasksLeft` (text: tasks the wallet
+    can still complete with their points) and `balance` (Integer, 0 without a
+    wallet).
+3.  **`FA/classes/ConciergeStartOrder.cls`** — Invocable "Concierge: Start
+    order". Inputs `walletId`, `sessionKey` (both bound), `offeringSlug` (from
+    the model). Calls `CheckoutService.checkout(walletId, 'agent:' + sessionKey
+    + ':' + slug, [slug])`, so a repeat in the same chat is a replay. Outputs
+    `success` (Boolean), `orderNumber`, `balance`, `message` (the reason when it
+    fails, e.g. not enough points).
+4.  **`FA/classes/ConciergeActionsTest.cls`** — Balance and summary; catalogue
+    with and without a wallet; order succeeds once and repeats as a replay; not
+    enough points → `success` false with a message; unknown wallet → message,
+    no exception.
+5.  **`FA/permissionsets/Shop_Agent.permissionset-meta.xml`** — Class access to
+    the three action classes.
+6.  **`FA/aiAuthoringBundles/Points_Shop_Concierge/`** — `.agent` and
+    `.bundle-meta.xml`. System instructions in Piyush's friendly tone; one
+    subagent "shop_help" with the three actions; instructions: answer only shop
+    questions, recommend from the catalogue output, confirm the offering and
+    points before calling start_order, never promise beyond the delivery
+    promise, never ask for or use a wallet ID from the user.
+7.  **`salesforce/org-setup/external-client-app/step1/...ecaOauth`** (Modify) —
+    Add the Agent API scopes; document the JWT setting in
+    `salesforce/org-setup/README.md`.
+
+#### Storefront
+
+8.  **`SF/lib/backend/salesforce.ts`** (Modify) — Export `getAccessToken()`
+    (the cached client-credentials token) for the Agent API client.
+9.  **`SF/lib/concierge/types.ts`** — `interface Concierge { start(session):
+    Promise<string>; send(sessionId, text): Promise<string>; end(sessionId) }`.
+10. **`SF/lib/concierge/agent-api.ts`** — Start: `POST
+    /agents/{SF_AGENT_ID}/sessions` with `externalSessionKey`, `instanceConfig.
+    endpoint` (the token's instance URL), `streamingCapabilities.chunkTypes:
+    ['Text']`, `bypassUser: true` and `variables` `WalletId`, `SessionKey`
+    (Text). Send: `POST /sessions/{id}/messages` with `message: { sequenceId,
+    type: 'Text', text }`, returns the joined `messages[].message`. End: `DELETE
+    /sessions/{id}` with header `x-session-end-reason: UserRequest`. 429 →
+    `ShopError('UNAVAILABLE', busy text)`; 404 on send → `ShopError('NOT_FOUND')`
+    (session gone); timeout 25 s.
+11. **`SF/lib/concierge/stub.ts`** — Rule-based replies (balance, earn, offerings,
+    order requests answered with "open the cart").
+12. **`SF/lib/concierge/index.ts`** — `getConcierge()` by `SHOP_BACKEND`.
+13. **`SF/lib/env.ts`** (Modify) — `SF_AGENT_ID` required when
+    `SHOP_BACKEND=salesforce` and the concierge is used (checked in the route).
+14. **`SF/app/api/concierge/route.ts`** — `export const maxDuration = 30`. `POST
+    { message }` (1–500 characters): origin check, session; starts a session if
+    `ps_chat` is missing, sends the message, restarts once on `NOT_FOUND`;
+    returns `{ reply }`. `DELETE`: ends the session and clears the cookie.
+15. **`SF/components/ConciergePanel.tsx`** — Client component in the layout,
+    shown to signed-in visitors: a "Ask the concierge" button bottom-right opens
+    a panel with the conversation, a text box, a "thinking…" state, the busy
+    message on `UNAVAILABLE`, and `refreshShop()` after each reply (an order may
+    have changed the balance). Closing the panel sends `DELETE`.
+16. **`SF/lib/concierge/agent-api.test.ts`** — Mocked fetch: start body has the
+    two variables; send joins messages; 429 → `UNAVAILABLE`.
+17. **`SF/app/api/concierge.test.ts`** — Route on the stub: no session → 401;
+    reply returned; message over 500 characters → 400; the cookie holds the
+    session and `DELETE` clears it.
+
+### Exit check
+
+All Apex tests pass; the agent is published and active; storefront checks pass;
+against the org, a signed-in visitor asks for the balance, asks what to buy, and
+orders from chat; the order appears in Salesforce and the balance updates.

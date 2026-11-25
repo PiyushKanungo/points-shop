@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AiAgentDefinition xmlns="http://soap.sforce.com/2006/04/metadata">
+    <agentDSLEnabled>true</agentDSLEnabled>
+    <agentDescription>Answers questions about points, earning and offerings, and can place an order with points.</agentDescription>
+    <agentType>EinsteinServiceAgent</agentType>
+    <botUser>shop-concierge.00dgl00000ifl0t@points-shop.dev</botUser>
+    <logPrivateConversationData>false</logPrivateConversationData>
+    <richContentEnabled>true</richContentEnabled>
+    <type>ExternalCopilot</type>
+</AiAgentDefinition>

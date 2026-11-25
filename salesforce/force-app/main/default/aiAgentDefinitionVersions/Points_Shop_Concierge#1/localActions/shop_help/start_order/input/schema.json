@@ -1,0 +1,28 @@
+{
+  "required" : [ "walletId", "sessionKey", "offeringSlug" ],
+  "unevaluatedProperties" : false,
+  "properties" : {
+    "offeringSlug" : {
+      "title" : "Offering Slug",
+      "description" : "The slug of the offering to order, taken from get_catalog.",
+      "lightning:type" : "lightning__textType",
+      "lightning:isPII" : false,
+      "copilotAction:isUserInput" : false
+    },
+    "sessionKey" : {
+      "title" : "Session Key",
+      "description" : "This chat's key.",
+      "lightning:type" : "lightning__textType",
+      "lightning:isPII" : false,
+      "copilotAction:isUserInput" : false
+    },
+    "walletId" : {
+      "title" : "Wallet Id",
+      "description" : "The signed-in visitor's wallet ID.",
+      "lightning:type" : "lightning__textType",
+      "lightning:isPII" : false,
+      "copilotAction:isUserInput" : false
+    }
+  },
+  "lightning:type" : "lightning__objectType"
+}

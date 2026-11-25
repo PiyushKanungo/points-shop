@@ -1,0 +1,14 @@
+{
+  "required" : [ "walletId" ],
+  "unevaluatedProperties" : false,
+  "properties" : {
+    "walletId" : {
+      "title" : "Wallet Id",
+      "description" : "The signed-in visitor's wallet ID.",
+      "lightning:type" : "lightning__textType",
+      "lightning:isPII" : false,
+      "copilotAction:isUserInput" : false
+    }
+  },
+  "lightning:type" : "lightning__objectType"
+}

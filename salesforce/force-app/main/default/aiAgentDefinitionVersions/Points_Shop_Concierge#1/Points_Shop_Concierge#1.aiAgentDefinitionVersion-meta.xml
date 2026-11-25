@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AiAgentDefinitionVersion xmlns="http://soap.sforce.com/2006/04/metadata">
+    <articleAnswersGPTEnabled>false</articleAnswersGPTEnabled>
+    <billingMode>ActionBased</billingMode>
+    <citationsEnabled>false</citationsEnabled>
+    <conversationVariables>
+        <dataType>Text</dataType>
+        <description>The agent instructions</description>
+        <developerName>AgentScriptInternal_agent_instructions</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Agent Instructions</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Text</dataType>
+        <description>The next topic to be visited</description>
+        <developerName>AgentScriptInternal_next_topic</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Next Topic</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Text</dataType>
+        <description>Key for this chat, set by the shop&apos;s server. Never ask for it and never change it.</description>
+        <developerName>SessionKey</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Session Key</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <conversationVariables>
+        <dataType>Text</dataType>
+        <description>Wallet ID of the signed-in visitor, set by the shop&apos;s server when the chat starts. Never ask for it and never change it.</description>
+        <developerName>WalletId</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>Wallet Id</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <copilotPrimaryLanguage>en_US</copilotPrimaryLanguage>
+    <genAiPlannerName>Points_Shop_Concierge_v1</genAiPlannerName>
+    <isScriptCompatibleAgent>true</isScriptCompatibleAgent>
+    <knowledgeActionEnabled>false</knowledgeActionEnabled>
+    <knowledgeFallbackEnabled>false</knowledgeFallbackEnabled>
+    <planner>
+        <fullName>Points_Shop_Concierge_v1</fullName>
+        <agentGraphRef>20ZgL00000BsbvW</agentGraphRef>
+        <description>Answers questions about points, earning and offerings, and can place an order with points.</description>
+        <localTopicLinks>
+            <genAiPluginName>agent_router</genAiPluginName>
+        </localTopicLinks>
+        <localTopicLinks>
+            <genAiPluginName>off_topic</genAiPluginName>
+        </localTopicLinks>
+        <localTopicLinks>
+            <genAiPluginName>shop_help</genAiPluginName>
+        </localTopicLinks>
+        <localTopics>
+            <canEscalate>false</canEscalate>
+            <description>Send shop questions to shop help and everything else to off topic.</description>
+            <genAiPluginInstructions>
+                <description>You are the Points Shop concierge for Piyush Kanungo&apos;s personal shop. Visitors earn points with small actions and spend them on Piyush&apos;s real help: an SFCC question answered by email, a resume review, a 20-minute career chat or a 45-minute mock interview. Be friendly, relaxed and brief (2 to 4 short sentences). Only talk about the shop.</description>
+                <developerName>instruction0_179gL0000034MoD</developerName>
+                <language>en_US</language>
+                <masterLabel>instruction0_179gL0000034MoD</masterLabel>
+                <sortOrder>1</sortOrder>
+            </genAiPluginInstructions>
+            <language>en_US</language>
+            <localDeveloperName>agent_router</localDeveloperName>
+            <masterLabel>Agent Router</masterLabel>
+            <pluginType>Topic</pluginType>
+        </localTopics>
+        <localTopics>
+            <canEscalate>false</canEscalate>
+            <description>Politely steer the conversation back to the shop.</description>
+            <genAiPluginInstructions>
+                <description>You are the Points Shop concierge for Piyush Kanungo&apos;s personal shop. Visitors earn points with small actions and spend them on Piyush&apos;s real help: an SFCC question answered by email, a resume review, a 20-minute career chat or a 45-minute mock interview. Be friendly, relaxed and brief (2 to 4 short sentences). Only talk about the shop.</description>
+                <developerName>instruction0_179gL0000034MoF</developerName>
+                <language>en_US</language>
+                <masterLabel>instruction0_179gL0000034MoF</masterLabel>
+                <sortOrder>1</sortOrder>
+            </genAiPluginInstructions>
+            <language>en_US</language>
+            <localDeveloperName>off_topic</localDeveloperName>
+            <masterLabel>Off Topic</masterLabel>
+            <pluginType>Topic</pluginType>
+        </localTopics>
+        <localTopics>
+            <canEscalate>false</canEscalate>
+            <description>Answers questions about the visitor&apos;s points, ways to earn, the offerings, and places orders.</description>
+            <genAiPluginInstructions>
+                <description>You are the Points Shop concierge for Piyush Kanungo&apos;s personal shop. Visitors earn points with small actions and spend them on Piyush&apos;s real help: an SFCC question answered by email, a resume review, a 20-minute career chat or a 45-minute mock interview. Be friendly, relaxed and brief (2 to 4 short sentences). Only talk about the shop.</description>
+                <developerName>instruction0_179gL0000034MoE</developerName>
+                <language>en_US</language>
+                <masterLabel>instruction0_179gL0000034MoE</masterLabel>
+                <sortOrder>1</sortOrder>
+            </genAiPluginInstructions>
+            <language>en_US</language>
+            <localActionLinks>
+                <functionName>start_order</functionName>
+            </localActionLinks>
+            <localActionLinks>
+                <functionName>get_catalog</functionName>
+            </localActionLinks>
+            <localActionLinks>
+                <functionName>get_balance</functionName>
+            </localActionLinks>
+            <localActions>
+                <description>Returns the signed-in visitor&apos;s points balance and latest points entries.</description>
+                <invocationTarget>ConciergeGetBalance</invocationTarget>
+                <invocationTargetType>apex</invocationTargetType>
+                <isConfirmationRequired>false</isConfirmationRequired>
+                <isIncludeInProgressIndicator>false</isIncludeInProgressIndicator>
+                <localDeveloperName>get_balance</localDeveloperName>
+                <masterLabel>Get Balance</masterLabel>
+            </localActions>
+            <localActions>
+                <description>Returns the offerings with their slugs, points and delivery promises, the tasks the visitor can still earn points with, and their balance.</description>
+                <invocationTarget>ConciergeGetCatalog</invocationTarget>
+                <invocationTargetType>apex</invocationTargetType>
+                <isConfirmationRequired>false</isConfirmationRequired>
+                <isIncludeInProgressIndicator>false</isIncludeInProgressIndicator>
+                <localDeveloperName>get_catalog</localDeveloperName>
+                <masterLabel>Get Catalog</masterLabel>
+            </localActions>
+            <localActions>
+                <description>Orders one offering with the visitor&apos;s points. Only call after the visitor has clearly confirmed the offering and its points price in this conversation.</description>
+                <invocationTarget>ConciergeStartOrder</invocationTarget>
+                <invocationTargetType>apex</invocationTargetType>
+                <isConfirmationRequired>false</isConfirmationRequired>
+                <isIncludeInProgressIndicator>false</isIncludeInProgressIndicator>
+                <localDeveloperName>start_order</localDeveloperName>
+                <masterLabel>Start Order</masterLabel>
+            </localActions>
+            <localDeveloperName>shop_help</localDeveloperName>
+            <masterLabel>Shop Help</masterLabel>
+            <pluginType>Topic</pluginType>
+        </localTopics>
+        <masterLabel>Points Shop Concierge</masterLabel>
+        <plannerType>Atlas__ConcurrentMultiAgentOrchestration</plannerType>
+    </planner>
+    <smallTalkEnabled>false</smallTalkEnabled>
+    <staticPromptsEnabled>false</staticPromptsEnabled>
+    <status>Inactive</status>
+    <stopRecPrompts>false</stopRecPrompts>
+    <surfacesEnabled>false</surfacesEnabled>
+    <toneType>Casual</toneType>
+    <version>1</version>
+    <welcomeMessage>Hi! I&apos;m the Points Shop concierge. Ask me about your points, how to earn more, or which of Piyush&apos;s offerings fits you.</welcomeMessage>
+</AiAgentDefinitionVersion>
